@@ -34,7 +34,7 @@ public class ClassUtils {
                     classes.addAll(findClass(directory, packageName));
                 }
                 for (Class child : classes) {
-                    if (fatherInterface.isAssignableFrom(child) && !fatherInterface.equals(child) && !Modifier.isAbstract(child.getModifiers())) {
+                    if (fatherInterface.isAssignableFrom(child) && !fatherInterface.equals(child)) {
                         returnList.add(child);
                     }
                 }

@@ -39,7 +39,7 @@ public class RepositoryHandler<T, ID> implements InvocationHandler {
         String methodName = method.getName();
         List<String> fieldNames = getFiledNames(methodName);
         checkParams(fieldNames, args, methodName);
-        String entityName = baseRepository.getDomainClass().getSimpleName().toLowerCase();
+        String entityName = baseRepository.getDomainClass().getSimpleName();
         String sql = generateSql(entityName, fieldNames, args);
 
         // 这样实现首先把整个resultSet都解析了，再去判断方法的返回值是不是collection，效率不高，不过反正是个玩具，说明意思就可以了。
@@ -157,7 +157,7 @@ public class RepositoryHandler<T, ID> implements InvocationHandler {
         }
         javaName = javaName.substring(0, 1).toLowerCase(ENGLISH) + javaName.substring(1);
         StringBuilder sb = new StringBuilder();
-        for (int i = 1; i != javaName.length(); ++i) {
+        for (int i = 0; i != javaName.length(); ++i) {
             if (Character.isUpperCase(javaName.charAt(i))) {
                 sb.append('_').append(Character.toLowerCase(javaName.charAt(i)));
             } else sb.append(javaName.charAt(i));
@@ -165,11 +165,11 @@ public class RepositoryHandler<T, ID> implements InvocationHandler {
         return sb.toString();
     }
 
-    private String capitalize(String name) {
+    private String firstCharToLowerCase(String name) {
         if (name == null || name.length() == 0) {
             return name;
         }
-        return name.substring(0, 1).toUpperCase(ENGLISH) + name.substring(1);
+        return name.substring(0, 1).toLowerCase(ENGLISH) + name.substring(1);
     }
 
     /**
@@ -177,7 +177,7 @@ public class RepositoryHandler<T, ID> implements InvocationHandler {
      */
     private List<String> getFiledNames(String methodName) {
         String removedStart = methodName.replaceFirst("^(find|get)\\w?By", "");
-        return Arrays.stream(removedStart.split("And")).map(String::toLowerCase).collect(Collectors.toList());
+        return Arrays.stream(removedStart.split("And")).map(this::firstCharToLowerCase).collect(Collectors.toList());
     }
 
 }
