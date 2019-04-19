@@ -1,5 +1,4 @@
-package com.lifeStory.repository;
+package com.lifeStory.baseRepository;
 
 public interface Repository<T, ID> {
-
 }
