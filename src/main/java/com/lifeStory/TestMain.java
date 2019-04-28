@@ -1,7 +1,7 @@
 package com.lifeStory;
 
 import com.lifeStory.repository.CaseRepository;
-import com.lifeStory.repository.StudentRepository;
+import com.lifeStory.utils.RepoStore;
 
 public class TestMain {
 

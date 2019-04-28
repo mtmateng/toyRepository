@@ -2,14 +2,16 @@ package com.lifeStory.model;
 
 import lombok.Data;
 
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
 import java.time.LocalDate;
 
-/**
- * 其中笔录不能抽出来的数据就忽略了
- */
 @Data
+@Entity
 public class CaseEntity {
 
+    @Id
     private String caseSubjectId;
     private String caseId;              //案件编号
     private String caseGuid;
