@@ -3,7 +3,6 @@ package com.lifeStory.utils;
 import com.lifeStory.RepositoryHandler;
 import com.lifeStory.baseRepository.BaseRepository;
 import com.lifeStory.baseRepository.Repository;
-import com.zaxxer.hikari.HikariDataSource;
 import lombok.Getter;
 
 import javax.sql.DataSource;
@@ -15,24 +14,29 @@ import java.util.Map;
 
 public class RepoStore {
 
-    private final Map<Class<?>, Repository<?, ?>> store = new HashMap<>();
+    private final Map<Class<?>, Repository<?, ?>> store;
 
     @Getter
     private final DataSource dataSource;
+    private final EntityUtil entityUtil;
 
-    public RepoStore() {
+    public RepoStore(DataSource dataSource, String entityPackageName, String repoPackageName) {
 
-        HikariDataSource innerDataSource = new HikariDataSource();
-        innerDataSource.setJdbcUrl("jdbc:h2:mem:test");
-        innerDataSource.setDriverClassName("org.h2.Driver");
-        innerDataSource.setUsername("testdb");
-        innerDataSource.setPassword("testdb");
-        dataSource = innerDataSource;
+        this.dataSource = dataSource;
+        this.entityUtil = initEntityUtil(entityPackageName);
+        this.store = initStore(repoPackageName);
 
-        List<Class<Repository>> classes = ClassUtils.getAllClassByInterface(Repository.class, "com.lifeStory.repository");
+    }
+
+    private Map<Class<?>, Repository<?, ?>> initStore(String repoPackageName) {
+        Map<Class<?>, Repository<?, ?>> store = new HashMap<>();
+        List<Class<Repository>> classes = ClassUtils.getAllClassByInterface(Repository.class, repoPackageName);
         for (Class<Repository> aClass : classes) {
 
             Class<?> entityClass = (Class) ((ParameterizedType) aClass.getGenericInterfaces()[0]).getActualTypeArguments()[0];
+            if (!entityUtil.getAllManagedClasses().contains(entityClass)) {
+                throw new RuntimeException(String.format("发现Repo：%s使用了未被管理的Entity：%s，请检查Entity所在包，或检查其是否被@Entity标注", aClass.getName(), entityClass.getName()));
+            }
             Class<?> idClass = (Class) ((ParameterizedType) aClass.getGenericInterfaces()[0]).getActualTypeArguments()[1];
             RepositoryHandler<?, ?> repositoryHandler = buildRepositoryHandler(entityClass, idClass);
             Repository repository = aClass.cast(Proxy.newProxyInstance(
@@ -40,10 +44,17 @@ public class RepoStore {
             ));
             store.put(aClass, repository);
         }
+        return store;
     }
 
+
+    private EntityUtil initEntityUtil(String entityPackageName) {
+        return new EntityUtil(entityPackageName, dataSource);
+    }
+
+
     private <T, Id> RepositoryHandler<T, Id> buildRepositoryHandler(Class<T> entityClass, Class<Id> idClass) {
-        return new RepositoryHandler<>(new BaseRepository<>(entityClass, idClass), dataSource);
+        return new RepositoryHandler<>(new BaseRepository<>(entityClass, idClass, entityUtil.getEntityInfo(entityClass), dataSource));
     }
 
     public <Repo> Repo getRepository(Class<Repo> tClass) {

@@ -34,9 +34,9 @@ class ClassUtils {
         return returnList;
     }
 
-    static List<Class> getAllClassByAnnotation(Class<? extends Annotation> annotation, String packageName) {
+    static List<Class<?>> getAllClassByAnnotation(Class<? extends Annotation> annotation, String packageName) {
 
-        List<Class> returnList = new ArrayList<>();
+        List<Class<?>> returnList = new ArrayList<>();
         try {
             List<Class> classes = findClassInPackage(packageName);
             for (Class child : classes) {
