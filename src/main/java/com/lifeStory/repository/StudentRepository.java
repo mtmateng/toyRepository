@@ -7,7 +7,7 @@ import java.util.List;
 
 public interface StudentRepository extends Repository<Student, Integer> {
 
-    //Student findById(Integer id);
+    <T> T findSth(Class<T> type);
 
     List<Student> findByName(String name);
 

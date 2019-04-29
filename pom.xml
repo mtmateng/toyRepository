@@ -44,6 +44,11 @@
             <version>2.2.1</version>
         </dependency>
 
+        <dependency>
+            <groupId>cglib</groupId>
+            <artifactId>cglib</artifactId>
+            <version>3.2.11</version>
+        </dependency>
 
     </dependencies>
 </project>

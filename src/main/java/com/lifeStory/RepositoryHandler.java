@@ -1,17 +1,24 @@
 package com.lifeStory;
 
 import com.lifeStory.baseRepository.BaseRepository;
+import com.lifeStory.utils.SQLUtil;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
 
 public class RepositoryHandler<T, ID> implements InvocationHandler {
 
     private final BaseRepository<T, ID> baseRepository;
+    private final Map<Method, String> method2SqlTemplate = new HashMap<>();
 
     public RepositoryHandler(BaseRepository<T, ID> baseRepository) {
         this.baseRepository = baseRepository;
+        for (Method declaredMethod : baseRepository.getClass().getDeclaredMethods()) {
+            method2SqlTemplate.put(declaredMethod, SQLUtil.buildSqlTemplate(declaredMethod, baseRepository.getEntityInfo()));
+        }
     }
 
     public Object invoke(Object proxy, Method method, Object[] args) {

@@ -10,7 +10,7 @@ import javax.sql.DataSource;
 import java.lang.reflect.Field;
 import java.util.*;
 
-public class EntityUtil {
+class EntityUtil {
 
     private final Map<Class<?>, EntityInfo> classEntityInfoMap = new HashMap<>();
 
@@ -31,8 +31,8 @@ public class EntityUtil {
     private void createTableIfNotExists(DataSource dataSource) {
 
         for (Class<?> aClass : classEntityInfoMap.keySet()) {
-            String sql = SqlUtil.generateCreateTableSql(classEntityInfoMap.get(aClass));
-            SqlUtil.executeSql(sql, dataSource);
+            String sql = SQLUtil.generateCreateTableSql(classEntityInfoMap.get(aClass));
+            SQLUtil.executeSql(sql, dataSource);
         }
 
     }

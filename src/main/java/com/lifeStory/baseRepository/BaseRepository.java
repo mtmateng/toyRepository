@@ -12,8 +12,6 @@ import java.sql.Statement;
 import java.time.LocalDate;
 import java.util.*;
 
-import static com.lifeStory.utils.NameUtil.getFiledNamesByMethodName;
-
 public class BaseRepository<T, ID> implements Repository<T, ID> {
 
     @Getter
@@ -31,6 +29,7 @@ public class BaseRepository<T, ID> implements Repository<T, ID> {
         this.idClass = idClass;
         this.entityInfo = entityInfo;
         this.dataSource = dataSource;
+
     }
 
     private String getEntityDBName() {
@@ -48,12 +47,21 @@ public class BaseRepository<T, ID> implements Repository<T, ID> {
 
     }
 
-    // 演示如何按methodName动态生成sql语句
+//    public T save(T entity) {
+//
+//    }
+
+    /**
+     * 演示如何按methodName动态生成sql语句
+     * Spring支持select部分字段，有两种方式，一个是返回值直接指定为一个interface，一个是传入一个Type参数
+     * 如果返回值是一个接口，那么就需要用cglib来搞，如果传入一个Type参数，那就直接实例化一个就好
+     */
     public Object executeSelectSqlByMethodName(Method method, Object[] args) {
 
-        List<String> fieldNames = getFiledNamesByMethodName(method.getName());
-        checkParams(fieldNames, args, method.getName());
-        String sql = generateSelectSql(getEntityDBName(), fieldNames, args);
+        List<String> queryFieldNames = getQueryFiledNamesByMethodName(method.getName());
+        List<String> selectFieldNames = getSelectFieldNamesByMethod(method);
+        checkParams(queryFieldNames, args, method.getName());
+        String sql = generateSelectSql(getEntityDBName(), queryFieldNames, args);
         List<T> results = executeSelectSql(sql);
         return buildReturnValue(results, method.getReturnType(), method.getName());
 

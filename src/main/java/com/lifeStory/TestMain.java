@@ -1,5 +1,6 @@
 package com.lifeStory;
 
+import com.lifeStory.model.Student;
 import com.lifeStory.repository.CaseRepository;
 import com.lifeStory.repository.StudentRepository;
 import com.lifeStory.utils.RepoStore;
@@ -22,12 +23,14 @@ public class TestMain {
 
         StudentRepository studentRepository = repoStore.getRepository(StudentRepository.class);
         System.out.println(studentRepository.findById(1));
+//        studentRepository.findSth(Student.class);
         System.out.println(studentRepository.findByName("mt"));
-        System.out.println(studentRepository.findByGender("male"));
-        System.out.println(studentRepository.findByNameAndGender("zmz", "male"));
-
-        CaseRepository caseRepository = repoStore.getRepository(CaseRepository.class);
-        caseRepository.findByCaseSubjectId("12345").ifPresent(System.out::println);
+        System.out.println(studentRepository.findByName("mt"));
+//        System.out.println(studentRepository.findByGender("male"));
+//        System.out.println(studentRepository.findByNameAndGender("zmz", "male"));
+//
+//        CaseRepository caseRepository = repoStore.getRepository(CaseRepository.class);
+//        caseRepository.findByCaseSubjectId("12345").ifPresent(System.out::println);
 
     }
 
