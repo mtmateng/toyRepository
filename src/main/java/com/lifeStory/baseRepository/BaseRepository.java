@@ -58,8 +58,9 @@ public class BaseRepository<T, ID> implements Repository<T, ID> {
      */
     public Object executeSelectSqlByMethodName(Method method, Object[] args) {
 
-        List<String> queryFieldNames = getQueryFiledNamesByMethodName(method.getName());
-        List<String> selectFieldNames = getSelectFieldNamesByMethod(method);
+//        List<String> queryFieldNames = getQueryFiledNamesByMethodName(method.getName());
+//        List<String> selectFieldNames = getSelectFieldNamesByMethod(method);
+        List<String> queryFieldNames = null;
         checkParams(queryFieldNames, args, method.getName());
         String sql = generateSelectSql(getEntityDBName(), queryFieldNames, args);
         List<T> results = executeSelectSql(sql);

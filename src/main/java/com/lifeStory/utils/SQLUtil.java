@@ -1,17 +1,17 @@
 package com.lifeStory.utils;
 
 import com.lifeStory.helper.EntityInfo;
+import sun.jvm.hotspot.utilities.Assert;
 
 import javax.sql.DataSource;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
+import java.lang.reflect.*;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class SQLUtil {
@@ -23,13 +23,13 @@ public class SQLUtil {
         StringBuilder fieldClaus = new StringBuilder();
         for (String fieldName : entityInfo.getFieldName2Type().keySet()) {
             fieldClaus.append(entityInfo.getFiledName2DBName().get(fieldName))
-                    .append(" ")
-                    .append(generateDBType(entityInfo.getFieldName2Type().get(fieldName)))
-                    .append(", ");
+                .append(" ")
+                .append(generateDBType(entityInfo.getFieldName2Type().get(fieldName)))
+                .append(", ");
         }
         return String.format(CREATE_TABLE_TEMPLATE, entityInfo.getEntityDBName()
-                , fieldClaus.toString(), getPrimaryKeyClaus(entityInfo.getIdDBName()),
-                getEngineClaus(), getCharSetClaus());
+            , fieldClaus.toString(), getPrimaryKeyClaus(entityInfo.getIdDBName()),
+            getEngineClaus(), getCharSetClaus());
 
     }
 
@@ -42,7 +42,8 @@ public class SQLUtil {
         List<String> queryFieldNames = getQueryFiledNamesByMethodName(method.getName());
         checkSelectParams(selectFieldNames, method, entityInfo);
         checkQueryParams(queryFieldNames, method, entityInfo);
-
+        //todo
+        return null;
     }
 
     /**
@@ -68,7 +69,7 @@ public class SQLUtil {
         // 检查一下参数类型和Entity类型是否匹配
         for (int i = 0; i != method.getParameters().length; ++i) {
             if (entityInfo.getFieldName2Type().get(queryFieldNames.get(i)) == null ||
-                    !entityInfo.getFieldName2Type().get(queryFieldNames.get(i)).equals(method.getParameters()[i].getClass())) {
+                !entityInfo.getFieldName2Type().get(queryFieldNames.get(i)).equals(method.getParameters()[i].getClass())) {
                 throw new RuntimeException("第" + i + "个参数类型错误：" + method.getName());
             }
         }
@@ -81,26 +82,42 @@ public class SQLUtil {
      */
     private static List<String> getSelectFieldNamesByMethod(Method method) {
 
-        // 先看看是不是类型化参数
+        // 先看看参数中是不是有class类型
         List<Parameter> classParameters = new ArrayList<>();
         for (Parameter parameter : method.getParameters()) {
             if (parameter.getType() == Class.class) {
                 classParameters.add(parameter);
             }
         }
+
         if (classParameters.size() > 1) {
             throw new RuntimeException(String.format("方法%s有%d个类型化参数", method.getName(), classParameters.size()));
         } else if (classParameters.size() == 1) {
+            checkReturnType(method, classParameters.get(0).getType(), method.getGenericReturnType());
             return Arrays.stream(classParameters.get(0).getType().getFields()).map(Field::getName).collect(Collectors.toList());
         }
 
-        // 再看是不是返回一个接口
+        // 再看是不是返回一个接口，或接口的Collection（只接受collection或者List或者Set）
         if (method.getReturnType().isInterface()) {
             return Arrays.stream(method.getReturnType().getDeclaredMethods())
-                    .map(Method::getName).map(name -> name.replaceFirst("^get", ""))
-                    .map(NameUtil::firstCharToLowerCase).collect(Collectors.toList());
+                .map(Method::getName).map(name -> name.replaceFirst("^get", ""))
+                .map(NameUtil::firstCharToLowerCase).collect(Collectors.toList());
         }
         // 否则直接所有的字段值
+        return null;
+    }
+
+    private static void checkReturnType(Method method, Class<?> type, Type genericReturnType) {
+
+        if (genericReturnType instanceof ParameterizedType) {
+            ParameterizedType parameterizedType = (ParameterizedType) genericReturnType;
+            if (parameterizedType.getActualTypeArguments().length != 1) {
+                throw new RuntimeException(String.format("%s.%s有多个类型化参数", method.getDeclaringClass().getName(), method.getName()));
+            }
+            if (type != parameterizedType.getActualTypeArguments()[0]) {
+                throw new RuntimeException(String.format("%s.%s返回值类型错误", method.getDeclaringClass().getName(), method.getName()));
+            }
+        }
 
     }
 
