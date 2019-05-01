@@ -32,7 +32,7 @@ class EntityUtil {
 
         for (Class<?> aClass : classEntityInfoMap.keySet()) {
             String sql = SQLUtil.generateCreateTableSql(classEntityInfoMap.get(aClass));
-            SQLUtil.executeSql(sql, dataSource);
+            SQLUtil.executeSQL(sql, dataSource);
         }
 
     }

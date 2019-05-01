@@ -23,7 +23,8 @@ public class BaseRepository<T, ID> implements Repository<T, ID> {
     @Getter
     private final DataSource dataSource;
 
-    public BaseRepository(Class<T> domainClass, Class<ID> idClass, EntityInfo entityInfo, DataSource dataSource) {
+    public BaseRepository(Class<T> domainClass, Class<ID> idClass, EntityInfo entityInfo,
+                          DataSource dataSource, Class<Repository> repo) {
 
         this.domainClass = domainClass;
         this.idClass = idClass;
@@ -42,8 +43,9 @@ public class BaseRepository<T, ID> implements Repository<T, ID> {
         if (id == null) {
             throw new RuntimeException("id为null或空");
         }
-        String sql = generateSelectSql(entityInfo.getEntityDBName(), entityInfo.getIdDBName(), id);
-        return domainClass.cast(buildReturnValue(executeSelectSql(sql), domainClass, "findById"));
+        return null;
+//        String sql = generateSelectSql(entityInfo.getEntityDBName(), entityInfo.getIdDBName(), id);
+//        return domainClass.cast(buildReturnValue(executeSelectSql(sql), domainClass, "findById"));
 
     }
 
@@ -60,11 +62,12 @@ public class BaseRepository<T, ID> implements Repository<T, ID> {
 
 //        List<String> queryFieldNames = getQueryFiledNamesByMethodName(method.getName());
 //        List<String> selectFieldNames = getSelectFieldNamesByMethod(method);
-        List<String> queryFieldNames = null;
-        checkParams(queryFieldNames, args, method.getName());
-        String sql = generateSelectSql(getEntityDBName(), queryFieldNames, args);
-        List<T> results = executeSelectSql(sql);
-        return buildReturnValue(results, method.getReturnType(), method.getName());
+//        List<String> queryFieldNames = null;
+//        checkParams(queryFieldNames, args, method.getName());
+//        String sql = generateSelectSql(getEntityDBName(), queryFieldNames, args);
+//        List<T> results = executeSelectSql(sql);
+//        return buildReturnValue(results, method.getReturnType(), method.getName());
+        return null;
 
     }
 
@@ -75,34 +78,10 @@ public class BaseRepository<T, ID> implements Repository<T, ID> {
         }
         for (int i = 0; i != args.length; ++i) {
             if (entityInfo.getFieldName2Type().get(fieldNames.get(i)) == null ||
-                    !entityInfo.getFieldName2Type().get(fieldNames.get(i)).equals(args[0].getClass())) {
+                !entityInfo.getFieldName2Type().get(fieldNames.get(i)).equals(args[0].getClass())) {
                 throw new RuntimeException("第" + i + "个参数类型错误：" + methodName);
             }
         }
-    }
-
-    private String generateSelectSql(String entityName, String filedName, Object arg) {
-        return generateSelectSql(entityName, new ArrayList<>(Collections.singleton(filedName)), new Object[]{arg});
-    }
-
-    private String generateSelectSql(String entityName, List<String> fieldNames, Object[] args) {
-
-        StringBuilder sql = new StringBuilder()
-                .append("select * from ")
-                .append(entityInfo.getEntityDBName())
-                .append(" where ");
-
-        for (int i = 0; i != fieldNames.size(); ++i) {
-            sql.append(entityInfo.getFiledName2DBName().get(fieldNames.get(i))).append("=");
-            if (entityInfo.getFieldName2Type().get(fieldNames.get(i).toLowerCase()) == String.class
-                    || entityInfo.getFieldName2Type().get(fieldNames.get(i).toLowerCase()) == LocalDate.class) {
-                sql.append("'").append(args[i].toString()).append("'").append(" and ");
-            } else {
-                sql.append(args[i].toString()).append(" and ");
-            }
-        }
-
-        return sql.toString().replaceFirst(" and $", "");
     }
 
     private List<T> executeSelectSql(String sql) {
@@ -152,7 +131,7 @@ public class BaseRepository<T, ID> implements Repository<T, ID> {
 
         if (!Collection.class.isAssignableFrom(returnType) && results.size() > 1) {
             throw new RuntimeException(String.format("%s超过一个返回结果，但该方法的返回值：%s只能容纳一个结果",
-                    methodName, returnType.getName()));
+                methodName, returnType.getName()));
         }
         if (returnType == Optional.class) {
             if (results.isEmpty()) {
@@ -178,19 +157,4 @@ public class BaseRepository<T, ID> implements Repository<T, ID> {
 
     }
 
-    public Method getDeclaredMethod(Method method) {
-        for (Method declaredMethod : this.getClass().getMethods()) {
-            if (declaredMethod.getName().equals(method.getName())
-                    && declaredMethod.getParameterCount() == method.getParameterCount()) {
-                int count = declaredMethod.getParameterCount();
-                for (int index = 0; index != count; ++index) {
-                    if (declaredMethod.getParameters()[index].getType() != method.getParameters()[index].getType()) {
-                        return null;
-                    }
-                }
-                return declaredMethod;
-            }
-        }
-        return null;
-    }
 }

@@ -38,9 +38,9 @@ public class RepoStore {
                 throw new RuntimeException(String.format("发现Repo：%s使用了未被管理的Entity：%s，请检查Entity所在包，或检查其是否被@Entity标注", aClass.getName(), entityClass.getName()));
             }
             Class<?> idClass = (Class) ((ParameterizedType) aClass.getGenericInterfaces()[0]).getActualTypeArguments()[1];
-            RepositoryHandler<?, ?> repositoryHandler = buildRepositoryHandler(entityClass, idClass);
+            RepositoryHandler<?, ?> repositoryHandler = buildRepositoryHandler(entityClass, idClass, aClass);
             Repository repository = aClass.cast(Proxy.newProxyInstance(
-                    aClass.getClassLoader(), new Class<?>[]{aClass, Repository.class}, repositoryHandler
+                aClass.getClassLoader(), new Class<?>[]{aClass, Repository.class}, repositoryHandler
             ));
             store.put(aClass, repository);
         }
@@ -53,8 +53,8 @@ public class RepoStore {
     }
 
 
-    private <T, Id> RepositoryHandler<T, Id> buildRepositoryHandler(Class<T> entityClass, Class<Id> idClass) {
-        return new RepositoryHandler<>(new BaseRepository<>(entityClass, idClass, entityUtil.getEntityInfo(entityClass), dataSource));
+    private <T, Id> RepositoryHandler<T, Id> buildRepositoryHandler(Class<T> entityClass, Class<Id> idClass, Class<Repository> repo) {
+        return new RepositoryHandler<>(new BaseRepository<>(entityClass, idClass, entityUtil.getEntityInfo(entityClass), dataSource, repo));
     }
 
     public <Repo> Repo getRepository(Class<Repo> tClass) {

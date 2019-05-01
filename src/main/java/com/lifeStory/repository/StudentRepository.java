@@ -4,6 +4,7 @@ import com.lifeStory.baseRepository.Repository;
 import com.lifeStory.model.Student;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface StudentRepository extends Repository<Student, Integer> {
 

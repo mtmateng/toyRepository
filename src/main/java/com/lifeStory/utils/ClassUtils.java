@@ -3,13 +3,14 @@ package com.lifeStory.utils;
 import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 
-class ClassUtils {
+public class ClassUtils {
 
     /**
      * 获取接口或抽象类的实现类，要求所有的实现类都与接口或抽象类在同一目录，或其子目录下
@@ -71,7 +72,7 @@ class ClassUtils {
     }
 
     private static List<Class> findClass(File directory, String packageName)
-            throws ClassNotFoundException {
+        throws ClassNotFoundException {
         List<Class> classes = new ArrayList<>();
         if (!directory.exists()) {
             return classes;
@@ -88,4 +89,21 @@ class ClassUtils {
         return classes;
     }
 
+    public static Method getMethodByAnnouncement(Class repoImpl, Method targetMethod) {
+
+        for (Method declaredMethod : repoImpl.getMethods()) {
+            if (declaredMethod.getName().equals(targetMethod.getName())
+                && declaredMethod.getParameterCount() == targetMethod.getParameterCount()) {
+                int count = declaredMethod.getParameterCount();
+                for (int index = 0; index != count; ++index) {
+                    if (declaredMethod.getParameters()[index].getType() != targetMethod.getParameters()[index].getType()) {
+                        return null;
+                    }
+                }
+                return declaredMethod;
+            }
+        }
+        return null;
+
+    }
 }

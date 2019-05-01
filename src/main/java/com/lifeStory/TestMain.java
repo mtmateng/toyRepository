@@ -1,8 +1,5 @@
 package com.lifeStory;
 
-import com.lifeStory.model.Student;
-import com.lifeStory.repository.CaseRepository;
-import com.lifeStory.repository.StudentRepository;
 import com.lifeStory.utils.RepoStore;
 import com.zaxxer.hikari.HikariDataSource;
 
@@ -21,11 +18,11 @@ public class TestMain {
 
     private void test() {
 
-        StudentRepository studentRepository = repoStore.getRepository(StudentRepository.class);
-        System.out.println(studentRepository.findById(1));
-//        studentRepository.findSth(Student.class);
-        System.out.println(studentRepository.findByName("mt"));
-        System.out.println(studentRepository.findByName("mt"));
+//        StudentRepository studentRepository = repoStore.getRepository(StudentRepository.class);
+//        System.out.println(studentRepository.findById(1));
+////        studentRepository.findSth(Student.class);
+//        System.out.println(studentRepository.findByName("mt"));
+//        System.out.println(studentRepository.findByName("mt"));
 //        System.out.println(studentRepository.findByGender("male"));
 //        System.out.println(studentRepository.findByNameAndGender("zmz", "male"));
 //
