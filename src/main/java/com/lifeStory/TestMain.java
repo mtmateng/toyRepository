@@ -1,5 +1,7 @@
 package com.lifeStory;
 
+import com.lifeStory.repository.CaseRepository;
+import com.lifeStory.repository.StudentRepository;
 import com.lifeStory.utils.RepoStore;
 import com.zaxxer.hikari.HikariDataSource;
 
@@ -18,16 +20,15 @@ public class TestMain {
 
     private void test() {
 
-//        StudentRepository studentRepository = repoStore.getRepository(StudentRepository.class);
-//        System.out.println(studentRepository.findById(1));
-////        studentRepository.findSth(Student.class);
-//        System.out.println(studentRepository.findByName("mt"));
-//        System.out.println(studentRepository.findByName("mt"));
-//        System.out.println(studentRepository.findByGender("male"));
-//        System.out.println(studentRepository.findByNameAndGender("zmz", "male"));
-//
-//        CaseRepository caseRepository = repoStore.getRepository(CaseRepository.class);
-//        caseRepository.findByCaseSubjectId("12345").ifPresent(System.out::println);
+        StudentRepository studentRepository = repoStore.getRepository(StudentRepository.class);
+        System.out.println(studentRepository.findById(1));
+        System.out.println(studentRepository.findByName("mt"));
+        System.out.println(studentRepository.findByName("mt"));
+        System.out.println(studentRepository.findByGender("male"));
+        System.out.println(studentRepository.findByNameAndGender("zmz", "male"));
+
+        CaseRepository caseRepository = repoStore.getRepository(CaseRepository.class);
+        caseRepository.findByCaseSubjectId("12345").ifPresent(System.out::println);
 
     }
 
@@ -35,8 +36,8 @@ public class TestMain {
 
         DataSource dataSource = initDataSource();
         TestMain testMain = new TestMain(new RepoStore(dataSource,
-                "com.lifeStory.model",
-                "com.lifeStory.repository"));
+            "com.lifeStory.model",
+            "com.lifeStory.repository"));
 
         insertSth(dataSource);
 
@@ -47,17 +48,17 @@ public class TestMain {
     private static void insertSth(DataSource dataSource) {
 
         String sql = "INSERT INTO `student` (id, name, gender, birthday) VALUES \n" +
-                "(1,'mt','male','20180102'),\n" +
-                "(2,'syx','male','20180302'),\n" +
-                "(3,'zmz','female','20180902'),\n" +
-                "(4,'ly','female','20160102'),\n" +
-                "(5,'lry','male','20180402');";
+            "(1,'mt','male','20180102'),\n" +
+            "(2,'syx','male','20180302'),\n" +
+            "(3,'zmz','female','20180902'),\n" +
+            "(4,'ly','female','20160102'),\n" +
+            "(5,'lry','male','20180402');";
 
         String sql2 = "INSERT INTO `case_entity` (case_subject_id, case_id, case_guid, case_name, case_type, summary, update_time, category) VALUES \n" +
-                "('12345','A918271927','asdihalkjdbnakdbklac','王大全','刑事','聚众吸毒','20180202','容留他人吸毒'),\n" +
-                "('123456','A918271927','asdihalkjdbnakdbklac','王大全','刑事','聚众吸毒','20180202','容留他人吸毒'),\n" +
-                "('1234567','A918271927','asdihalkjdbnakdbklac','王大全','刑事','聚众吸毒','20180202','容留他人吸毒'),\n" +
-                "('12345678','A918271927','asdihalkjdbnakdbklac','王大全','刑事','聚众吸毒','20180202','容留他人吸毒');";
+            "('12345','A918271927','asdihalkjdbnakdbklac','王大全','刑事','聚众吸毒','20180202','容留他人吸毒'),\n" +
+            "('123456','A918271927','asdihalkjdbnakdbklac','王大全','刑事','聚众吸毒','20180202','容留他人吸毒'),\n" +
+            "('1234567','A918271927','asdihalkjdbnakdbklac','王大全','刑事','聚众吸毒','20180202','容留他人吸毒'),\n" +
+            "('12345678','A918271927','asdihalkjdbnakdbklac','王大全','刑事','聚众吸毒','20180202','容留他人吸毒');";
 
         try (Connection connection = dataSource.getConnection();
              Statement statement = connection.createStatement()) {

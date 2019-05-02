@@ -30,7 +30,7 @@ public class NameUtil {
         return sb.toString();
     }
 
-    static String firstCharToLowerCase(String name) {
+    public static String firstCharToLowerCase(String name) {
         if (name == null || name.length() == 0) {
             return name;
         }

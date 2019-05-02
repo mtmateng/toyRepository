@@ -1,10 +1,17 @@
 package com.lifeStory.utils;
 
 import com.lifeStory.helper.EntityInfo;
+import com.lifeStory.helper.ReturnInterfaceEnhancer;
+import com.lifeStory.helper.SQLMethodInfo;
+import javafx.util.Pair;
 
 import javax.sql.DataSource;
-import javax.xml.crypto.Data;
-import java.lang.reflect.*;
+import javax.swing.text.html.Option;
+import java.beans.PropertyDescriptor;
+import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -35,8 +42,8 @@ public class SQLUtil {
     /**
      * 根据method的相关参数，来生成sql的template String
      */
-    public static String buildSQLTemplate(Method method, EntityInfo entityInfo,
-                                          Class domainClass, Class repo) {
+    public static SQLMethodInfo buildSQLTemplate(Method method, EntityInfo entityInfo,
+                                                 Class domainClass, Class repo) {
 
         if (method.getName().startsWith("find")) {
             return buildSelectSQLTemplate(method, entityInfo, domainClass, repo);
@@ -46,7 +53,7 @@ public class SQLUtil {
 
     }
 
-    private static String buildSelectSQLTemplate(Method method, EntityInfo entityInfo, Class domainClass, Class repo) {
+    private static SQLMethodInfo buildSelectSQLTemplate(Method method, EntityInfo entityInfo, Class domainClass, Class repo) {
 
         int count = 0;
         for (Class<?> parameterType : method.getParameterTypes()) {
@@ -60,7 +67,10 @@ public class SQLUtil {
             throw new RuntimeException(String.format("%s.%s()有一个以上的Class参数，请检查", repo.getName(), method.getName()));
         }
 
-        List<String> selectFieldNames = getSelectFieldNamesByMethod(method, domainClass, entityInfo);
+        SQLMethodInfo methodInfo = new SQLMethodInfo();
+        methodInfo.setMethod(method);
+
+        List<String> selectFieldNames = getSelectFieldNamesByMethod(method, domainClass, entityInfo, methodInfo);
         List<String> queryFieldNames = getQueryFiledNamesByMethodName(method, entityInfo);
 
         StringBuilder sqlSb = new StringBuilder().append("select ");
@@ -80,7 +90,8 @@ public class SQLUtil {
             }
         }
 
-        return sqlSb.toString().replaceFirst(" and $", "");
+        methodInfo.setSQL(sqlSb.toString().replaceFirst(" and $", ""));
+        return methodInfo;
 
     }
 
@@ -109,18 +120,21 @@ public class SQLUtil {
      * 一种是动态传入一个Class参数，返回该Class或其Optional、Collection、List、Set容器类等。
      * 针对第一种可以静态解析返回的接口，但针对动态传入的Class，显然无法生成静态的SQL，只能推迟到动态来做
      */
-    private static List<String> getSelectFieldNamesByMethod(Method method, Class domainClass, EntityInfo entityInfo) {
+    private static List<String> getSelectFieldNamesByMethod(Method method, Class domainClass, EntityInfo entityInfo, SQLMethodInfo methodInfo) {
 
         //先看返回值是不是一个interface什么的
         List<String> ret;
-        Class realReturnType = checkAndGetReturnType(method, method.getGenericReturnType());
-        if (realReturnType == domainClass) {
+        Pair<Class, Class> realReturnType = checkAndGetReturnType(method, method.getGenericReturnType());
+        if (realReturnType.getValue() == domainClass) {
             ret = new ArrayList<>(entityInfo.getFieldName2Type().keySet());
-        } else if (realReturnType.isInterface()) {  //是一个interface
-            ret = checkAndReturnFieldNames(realReturnType, domainClass, entityInfo);
+        } else if (realReturnType.getValue().isInterface()) {  //是一个interface
+            ret = checkAndReturnFieldNames(realReturnType.getValue(), domainClass, entityInfo);
         } else {
             throw new RuntimeException(String.format("%s.%s()的返回值类型不支持", method.getDeclaringClass().getName(), method.getName()));
         }
+
+        methodInfo.setWrapClass(realReturnType.getKey());
+        methodInfo.setActualClass(realReturnType.getValue());
 
         return ret;
 
@@ -144,7 +158,7 @@ public class SQLUtil {
     /**
      * 检查一下返回值，是不是符合Option、Collection、List、Set
      */
-    private static Class checkAndGetReturnType(Method method, Type genericReturnType) {
+    private static Pair<Class, Class> checkAndGetReturnType(Method method, Type genericReturnType) {
 
         if (genericReturnType instanceof ParameterizedType) {
             ParameterizedType parameterizedType = (ParameterizedType) genericReturnType;
@@ -152,14 +166,18 @@ public class SQLUtil {
                 throw new RuntimeException(String.format("%s.%s()的返回值有多个类型化参数", method.getDeclaringClass().getName(), method.getName()));
             }
             Class rawType = (Class) parameterizedType.getRawType();
-            if (rawType != Collection.class && List.class.isAssignableFrom(rawType)
-                && Set.class.isAssignableFrom(rawType) && rawType != Optional.class) {
+            if (rawType != Collection.class && List.class != rawType && Set.class != rawType && rawType != Optional.class) {
                 throw new RuntimeException(String.format("%s.%s()的返回格式不支持，仅支持List、Collection、Set和Optional，以及原始类", method.getDeclaringClass().getName(), method.getName()));
             }
-            return (Class) parameterizedType.getActualTypeArguments()[0];
+            if (rawType == Collection.class || rawType == List.class) {
+                rawType = ArrayList.class;
+            } else if (rawType == Set.class) {
+                rawType = HashSet.class;
+            }
+            return new Pair<>(rawType, (Class) parameterizedType.getActualTypeArguments()[0]);
         } else if (genericReturnType instanceof TypeVariable) {
             throw new RuntimeException("并不支持解析模板返回值");
-        } else return (Class) genericReturnType;
+        } else return new Pair<>(null, (Class) genericReturnType);
 
     }
 
@@ -215,16 +233,106 @@ public class SQLUtil {
         }
     }
 
-    public static Object executeSelectSQL(DataSource dataSource, String SQL, Object[] args) {
+    public static <T> Object executeSelectSQL(DataSource dataSource, SQLMethodInfo methodInfo, Object[] args, Class<T> resultClass, EntityInfo entityInfo) {
 
+        String sql = buildSQLWithArgs(methodInfo.getSQL(), args);
+        List<T> results = executeSelectSQL(dataSource, sql, resultClass, entityInfo);
+        return buildReturnValue(results, methodInfo, methodInfo.getMethod().getName());
+
+    }
+
+    private static String buildSQLWithArgs(String sql, Object[] args) {
+
+        return String.format(sql, args);
+
+    }
+
+    private static <T> List<T> executeSelectSQL(DataSource dataSource, String sql, Class<T> resultClass, EntityInfo entityInfo) {
+
+        List<T> results = new ArrayList<>();
         try (Connection connection = dataSource.getConnection();
              Statement statement = connection.createStatement();
-             ResultSet resultSet = statement.executeQuery(SQL)) {
+             ResultSet resultSet = statement.executeQuery(sql)) {
 
-            return
-
-        } catch (SQLException e) {
-            throw new RuntimeException(String.format("执行%s失败", SQL), e);
+            while (resultSet.next()) {
+                Map<String, Object> sqlResultMap = extractSQLMap(entityInfo, resultSet);
+                T result = getResultInstance(resultClass, sqlResultMap);
+                results.add(result);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(String.format("执行%s时发生错误", sql), e);
         }
+        return results;
+
+    }
+
+    private static Map<String, Object> extractSQLMap(EntityInfo entityInfo, ResultSet resultSet) throws SQLException {
+
+        Map<String, Object> ret = new HashMap<>();
+        for (String fieldName : entityInfo.getFieldName2Type().keySet()) {
+            Class fieldType = entityInfo.getFieldName2Type().get(fieldName);
+            switch (fieldType.getName()) {
+                case "java.lang.String":
+                    ret.put(fieldName, resultSet.getString(entityInfo.getFiledName2DBName().get(fieldName)));
+                    break;
+                case "java.lang.Integer":
+                    ret.put(fieldName, resultSet.getInt(entityInfo.getFiledName2DBName().get(fieldName)));
+                    break;
+                case "java.time.LocalDate":
+                    Date date = resultSet.getDate(entityInfo.getFiledName2DBName().get(fieldName));
+                    // 真不敢相信Date以前竟然是java标准库的一部分，设计这个的程序员可能是临时工？
+                    LocalDate localDate = LocalDate.of(date.getYear() + 1900, date.getMonth() + 1, date.getDate());
+                    ret.put(fieldName, localDate);
+                    break;
+                default:
+                    throw new UnsupportedOperationException("尚未支持该类型");
+            }
+        }
+        return ret;
+
+    }
+
+    private static <T> T getResultInstance(Class<T> resultClass, Map<String, Object> sqlResultMap) throws Exception {
+
+        if (resultClass.isInterface()) {
+            return resultClass.cast(new ReturnInterfaceEnhancer().setValueStore(sqlResultMap).getInstance(resultClass));
+        } else {
+            T result = resultClass.newInstance();
+            for (String key : sqlResultMap.keySet()) {
+                PropertyDescriptor prop = new PropertyDescriptor(key, resultClass);
+                prop.getWriteMethod().invoke(result, sqlResultMap.get(key));
+            }
+            return result;
+        }
+    }
+
+    private static <T> Object buildReturnValue(List<T> results, SQLMethodInfo methodInfo, String methodName) {
+
+        if (results.size() > 1 && (methodInfo.getWrapClass() == null || methodInfo.getWrapClass() == Optional.class)) {
+
+            throw new RuntimeException(String.format("%s超过一个返回结果，但该方法的返回值：%s只能容纳一个结果",
+                methodName, methodInfo.getWrapClass() == null ? methodInfo.getActualClass().getName() : methodInfo.getWrapClass().getName()));
+        }
+
+        if (methodInfo.getWrapClass() == null) {
+            return results.isEmpty() ? null : results.get(0);
+        }
+
+        if (methodInfo.getWrapClass() == Optional.class) {
+            return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
+        }
+
+        Collection<T> ret;
+
+        if (ArrayList.class == methodInfo.getWrapClass()) {
+            ret = new ArrayList<>();
+        } else if (HashSet.class == methodInfo.getWrapClass()) {
+            ret = new HashSet<>();
+        } else {
+            throw new RuntimeException("集合类型当前只支持List和Set");
+        }
+        ret.addAll(results);
+        return ret;
+
     }
 }
