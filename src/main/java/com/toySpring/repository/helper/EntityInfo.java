@@ -1,4 +1,4 @@
-package com.lifeStory.helper;
+package com.toySpring.repository.helper;
 
 import lombok.Data;
 

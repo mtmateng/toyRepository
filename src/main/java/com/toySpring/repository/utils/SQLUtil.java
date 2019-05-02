@@ -1,17 +1,13 @@
-package com.lifeStory.utils;
+package com.toySpring.repository.utils;
 
-import com.lifeStory.helper.EntityInfo;
-import com.lifeStory.helper.ReturnInterfaceEnhancer;
-import com.lifeStory.helper.SQLMethodInfo;
+import com.toySpring.repository.helper.EntityInfo;
+import com.toySpring.repository.helper.ReturnValueHandler;
+import com.toySpring.repository.helper.SQLMethodInfo;
 import javafx.util.Pair;
 
 import javax.sql.DataSource;
-import javax.swing.text.html.Option;
 import java.beans.PropertyDescriptor;
-import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
+import java.lang.reflect.*;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -135,6 +131,7 @@ public class SQLUtil {
 
         methodInfo.setWrapClass(realReturnType.getKey());
         methodInfo.setActualClass(realReturnType.getValue());
+        methodInfo.setSelectFieldsNames(ret);
 
         return ret;
 
@@ -236,7 +233,7 @@ public class SQLUtil {
     public static <T> Object executeSelectSQL(DataSource dataSource, SQLMethodInfo methodInfo, Object[] args, Class<T> resultClass, EntityInfo entityInfo) {
 
         String sql = buildSQLWithArgs(methodInfo.getSQL(), args);
-        List<T> results = executeSelectSQL(dataSource, sql, resultClass, entityInfo);
+        List<T> results = executeSelectSQL(dataSource, sql, resultClass, entityInfo, methodInfo.getSelectFieldsNames());
         return buildReturnValue(results, methodInfo, methodInfo.getMethod().getName());
 
     }
@@ -247,7 +244,7 @@ public class SQLUtil {
 
     }
 
-    private static <T> List<T> executeSelectSQL(DataSource dataSource, String sql, Class<T> resultClass, EntityInfo entityInfo) {
+    private static <T> List<T> executeSelectSQL(DataSource dataSource, String sql, Class<T> resultClass, EntityInfo entityInfo, List<String> selectFieldsNames) {
 
         List<T> results = new ArrayList<>();
         try (Connection connection = dataSource.getConnection();
@@ -255,7 +252,7 @@ public class SQLUtil {
              ResultSet resultSet = statement.executeQuery(sql)) {
 
             while (resultSet.next()) {
-                Map<String, Object> sqlResultMap = extractSQLMap(entityInfo, resultSet);
+                Map<String, Object> sqlResultMap = extractSQLMap(entityInfo, resultSet, selectFieldsNames);
                 T result = getResultInstance(resultClass, sqlResultMap);
                 results.add(result);
             }
@@ -266,10 +263,10 @@ public class SQLUtil {
 
     }
 
-    private static Map<String, Object> extractSQLMap(EntityInfo entityInfo, ResultSet resultSet) throws SQLException {
+    private static Map<String, Object> extractSQLMap(EntityInfo entityInfo, ResultSet resultSet, List<String> selectFieldNames) throws SQLException {
 
         Map<String, Object> ret = new HashMap<>();
-        for (String fieldName : entityInfo.getFieldName2Type().keySet()) {
+        for (String fieldName : selectFieldNames) {
             Class fieldType = entityInfo.getFieldName2Type().get(fieldName);
             switch (fieldType.getName()) {
                 case "java.lang.String":
@@ -295,7 +292,9 @@ public class SQLUtil {
     private static <T> T getResultInstance(Class<T> resultClass, Map<String, Object> sqlResultMap) throws Exception {
 
         if (resultClass.isInterface()) {
-            return resultClass.cast(new ReturnInterfaceEnhancer().setValueStore(sqlResultMap).getInstance(resultClass));
+            return resultClass.cast(Proxy.newProxyInstance(
+                resultClass.getClassLoader(), new Class<?>[]{resultClass}, new ReturnValueHandler(sqlResultMap)
+            ));
         } else {
             T result = resultClass.newInstance();
             for (String key : sqlResultMap.keySet()) {

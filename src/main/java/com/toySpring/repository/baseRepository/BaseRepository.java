@@ -1,15 +1,10 @@
-package com.lifeStory.baseRepository;
+package com.toySpring.repository.baseRepository;
 
-import com.lifeStory.helper.EntityInfo;
+import com.toySpring.repository.helper.EntityInfo;
 import lombok.Getter;
 
 import javax.sql.DataSource;
-import java.beans.PropertyDescriptor;
 import java.lang.reflect.Method;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.Statement;
-import java.time.LocalDate;
 import java.util.*;
 
 public class BaseRepository<T, ID> implements Repository<T, ID> {

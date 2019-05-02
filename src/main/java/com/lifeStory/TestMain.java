@@ -2,7 +2,7 @@ package com.lifeStory;
 
 import com.lifeStory.repository.CaseRepository;
 import com.lifeStory.repository.StudentRepository;
-import com.lifeStory.utils.RepoStore;
+import com.toySpring.repository.utils.RepoStore;
 import com.zaxxer.hikari.HikariDataSource;
 
 import javax.sql.DataSource;
@@ -22,8 +22,11 @@ public class TestMain {
 
         StudentRepository studentRepository = repoStore.getRepository(StudentRepository.class);
         System.out.println(studentRepository.findById(1));
-        System.out.println(studentRepository.findByName("mt"));
-        System.out.println(studentRepository.findByName("mt"));
+        studentRepository.findByName("mt").forEach(o -> {
+            System.out.println(o.getId());
+            System.out.println(o.getName());
+        });
+        studentRepository.getMapById(1).forEach((k, v) -> System.out.println(String.format("key=%s,value=%s", k, v)));
         System.out.println(studentRepository.findByGender("male"));
         System.out.println(studentRepository.findByNameAndGender("zmz", "male"));
 
@@ -72,12 +75,7 @@ public class TestMain {
 
     private static DataSource initDataSource() {
 
-        HikariDataSource innerDataSource = new HikariDataSource();
-        innerDataSource.setJdbcUrl("jdbc:h2:mem:test");
-        innerDataSource.setDriverClassName("org.h2.Driver");
-        innerDataSource.setUsername("testdb");
-        innerDataSource.setPassword("testdb");
-        return innerDataSource;
+        return DataSourceStore.getDatasource();
 
     }
 

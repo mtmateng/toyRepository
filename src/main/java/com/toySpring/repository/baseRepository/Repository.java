@@ -1,4 +1,4 @@
-package com.lifeStory.baseRepository;
+package com.toySpring.repository.baseRepository;
 
 public interface Repository<T, ID> {
 

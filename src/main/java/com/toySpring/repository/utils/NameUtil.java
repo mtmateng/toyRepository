@@ -1,10 +1,6 @@
-package com.lifeStory.utils;
+package com.toySpring.repository.utils;
 
 import javax.persistence.Table;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
 
 import static java.util.Locale.ENGLISH;
 

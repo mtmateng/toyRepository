@@ -1,8 +1,8 @@
-package com.lifeStory.utils;
+package com.toySpring.repository.utils;
 
-import com.lifeStory.RepositoryHandler;
-import com.lifeStory.baseRepository.BaseRepository;
-import com.lifeStory.baseRepository.Repository;
+import com.toySpring.repository.helper.RepositoryHandler;
+import com.toySpring.repository.baseRepository.BaseRepository;
+import com.toySpring.repository.baseRepository.Repository;
 import lombok.Getter;
 
 import javax.sql.DataSource;

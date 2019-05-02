@@ -1,6 +1,6 @@
 package com.lifeStory.repository;
 
-import com.lifeStory.baseRepository.Repository;
+import com.toySpring.repository.baseRepository.Repository;
 import com.lifeStory.model.CaseEntity;
 
 import java.util.Optional;

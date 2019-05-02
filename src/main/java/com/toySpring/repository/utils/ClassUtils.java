@@ -1,4 +1,4 @@
-package com.lifeStory.utils;
+package com.toySpring.repository.utils;
 
 import java.io.File;
 import java.io.IOException;
@@ -68,6 +68,23 @@ public class ClassUtils {
             classes.addAll(findClass(directory, packageName));
         }
         return classes;
+
+    }
+
+    public static <T> Class<T> findClassByNameAndInterface(String className, Class<T> anInterface) {
+
+        List<Class<T>> classes = getAllClassByInterface(anInterface, anInterface.getPackage().getName());
+        List<Class<T>> ret = new ArrayList<>();
+        for (Class<T> aClass : classes) {
+            if (aClass.getSimpleName().equals(className)) {
+                ret.add(aClass);
+            }
+        }
+        if (ret.size() != 1) {
+            throw new RuntimeException(String.format("没有在%s包内找到%s的实现，或有超过一个以上的实现", anInterface.getPackage().getName(), className));
+        } else {
+            return ret.get(0);
+        }
 
     }
 

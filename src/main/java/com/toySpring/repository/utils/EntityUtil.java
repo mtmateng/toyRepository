@@ -1,7 +1,7 @@
-package com.lifeStory.utils;
+package com.toySpring.repository.utils;
 
 
-import com.lifeStory.helper.EntityInfo;
+import com.toySpring.repository.helper.EntityInfo;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;

@@ -1,11 +1,10 @@
-package com.lifeStory;
+package com.toySpring.repository.helper;
 
-import com.lifeStory.baseRepository.BaseRepository;
-import com.lifeStory.baseRepository.Repository;
-import com.lifeStory.helper.EntityInfo;
-import com.lifeStory.helper.SQLMethodInfo;
-import com.lifeStory.utils.ClassUtils;
-import com.lifeStory.utils.SQLUtil;
+import com.toySpring.repository.baseRepository.BaseRepository;
+import com.toySpring.repository.baseRepository.Repository;
+import com.toySpring.repository.utils.ClassUtils;
+import com.toySpring.repository.utils.SQLUtil;
+import javafx.util.Pair;
 
 import javax.sql.DataSource;
 import java.lang.reflect.InvocationHandler;
@@ -21,7 +20,8 @@ public class RepositoryHandler<T, ID> implements InvocationHandler {
     private final EntityInfo entityInfo;
 
     private final Map<Method, SQLMethodInfo> method2MethodInfoMap = new HashMap<>();
-    private final Map<Method, Method> method2RealMethodMap = new HashMap<>();
+    private final Map<Method, Pair<Object, Method>> method2RealMethodMap = new HashMap<>();
+    private final Map<Class, Object> interface2ImplInstanceMap = new HashMap<>();
 
     public RepositoryHandler(BaseRepository<T, ID> baseRepository, EntityInfo entityInfo, DataSource dataSource,
                              Class<T> domainClass, Class<ID> idClass, Class<Repository> repo) {
@@ -39,7 +39,7 @@ public class RepositoryHandler<T, ID> implements InvocationHandler {
     public Object invoke(Object proxy, Method method, Object[] args) throws Exception {
 
         if (method2RealMethodMap.get(method) != null) {
-            return method2RealMethodMap.get(method).invoke(baseRepository, method);
+            return method2RealMethodMap.get(method).getValue().invoke(method2RealMethodMap.get(method).getKey(), args);
         } else if (method2MethodInfoMap.get(method) != null) {
             return SQLUtil.executeSelectSQL(dataSource, method2MethodInfoMap.get(method), args, method2MethodInfoMap.get(method).getActualClass(), entityInfo);
         } else {        //这种情况就是传入Class，返回Class了
@@ -69,27 +69,30 @@ public class RepositoryHandler<T, ID> implements InvocationHandler {
 
         for (Class<?> anInterface : repo.getInterfaces()) {
             if (Repository.class.isAssignableFrom(anInterface)) {   //是Repository的扩展接口
-                actualBuildMethod2RealMethodMap(anInterface, baseRepository.getClass());
+                actualBuildMethod2RealMethodMap(anInterface, baseRepository);
             } else {    //不是Repository的扩展接口，意味着要用户自己提供了一个实现
-                Class repoImpl = getRepoImpl(repo);
+                Object repoImpl = getRepoImpl(anInterface, repo);
                 actualBuildMethod2RealMethodMap(anInterface, repoImpl);
             }
         }
 
     }
 
-    private void actualBuildMethod2RealMethodMap(Class<?> anInterface, Class repoImpl) {
+    private void actualBuildMethod2RealMethodMap(Class<?> anInterface, Object repoImpl) {
         for (Method declaredMethod : anInterface.getDeclaredMethods()) {
-            method2RealMethodMap.put(declaredMethod, ClassUtils.getMethodByAnnouncement(repoImpl, declaredMethod));
+            method2RealMethodMap.put(declaredMethod, new Pair<>(repoImpl, ClassUtils.getMethodByAnnouncement(repoImpl.getClass(), declaredMethod)));
         }
     }
 
-    private Class getRepoImpl(Class<Repository> repo) {
-        try {
-            return repo.getClassLoader().loadClass(repo.getName() + "Impl");
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(String.format("%sImpl没有找到，请检查", repo.getName()));
+    private Object getRepoImpl(Class<?> otherInterface, Class repo) {
+        if (interface2ImplInstanceMap.get(otherInterface) == null) {
+            try {
+                interface2ImplInstanceMap.put(otherInterface, ClassUtils.findClassByNameAndInterface(repo.getSimpleName() + "Impl", otherInterface).newInstance());
+            } catch (Exception e) {
+                throw new RuntimeException(String.format("%sImpl没有找到，请检查", repo.getName()));
+            }
         }
+        return interface2ImplInstanceMap.get(otherInterface);
     }
 
 }
