@@ -54,8 +54,8 @@ public class RepoStore {
 
 
     private <T, Id> RepositoryHandler<T, Id> buildRepositoryHandler(Class<T> entityClass, Class<Id> idClass, Class<Repository> repo) {
-        return new RepositoryHandler<>(new BaseRepository<>(entityClass, idClass, entityUtil.getEntityInfo(entityClass), dataSource, repo),
-            entityUtil.getEntityInfo(entityClass), dataSource, entityClass, idClass, repo);
+        return new RepositoryHandler<>(new BaseRepository<>(entityClass, idClass, entityUtil.getEntityInfo(entityClass), dataSource),
+            entityUtil.getEntityInfo(entityClass), dataSource, entityClass, repo);
     }
 
     public <Repo> Repo getRepository(Class<Repo> tClass) {

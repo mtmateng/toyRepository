@@ -1,4 +1,4 @@
-package com.lifeStory.test.returnInterface;
+package com.lifeStory.test.returnVo;
 
 public interface StudentVo {
 

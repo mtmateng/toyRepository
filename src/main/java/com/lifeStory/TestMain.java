@@ -2,6 +2,7 @@ package com.lifeStory;
 
 import com.lifeStory.repository.CaseRepository;
 import com.lifeStory.repository.StudentRepository;
+import com.lifeStory.test.returnVo.StudentVoClass;
 import com.toySpring.repository.utils.RepoStore;
 import com.zaxxer.hikari.HikariDataSource;
 
@@ -27,7 +28,7 @@ public class TestMain {
             System.out.println(o.getName());
         });
         studentRepository.getMapById(1).forEach((k, v) -> System.out.println(String.format("key=%s,value=%s", k, v)));
-        System.out.println(studentRepository.findByGender("male"));
+        System.out.println(studentRepository.findByGender("male", StudentVoClass.class));
         System.out.println(studentRepository.findByNameAndGender("zmz", "male"));
 
         CaseRepository caseRepository = repoStore.getRepository(CaseRepository.class);

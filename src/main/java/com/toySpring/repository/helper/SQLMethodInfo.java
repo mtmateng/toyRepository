@@ -9,9 +9,10 @@ import java.util.List;
 public class SQLMethodInfo {
 
     private Method method;
-    private List<String> selectFieldsNames;
-    private String SQL;
+    private String SQLTemplate;
     private Class<?> wrapClass;
     private Class<?> actualClass;
+    private List<String> selectFieldsNames;
+    private List<String> queryFieldsNames;
 
 }

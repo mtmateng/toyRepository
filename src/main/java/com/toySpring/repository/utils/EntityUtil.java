@@ -41,6 +41,7 @@ class EntityUtil {
         List<Class<?>> entities = ClassUtils.getAllClassByAnnotation(Entity.class, packageName);
         for (Class entity : entities) {
             EntityInfo entityInfo = new EntityInfo();
+            entityInfo.setEntityClass(entity);
             entityInfo.setEntityDBName(NameUtil.getEntityDbName(entity));
             for (Field declaredField : entity.getDeclaredFields()) {
                 if (declaredField.isAnnotationPresent(Transient.class)) {   //这个标注表明了我们不搞他
@@ -50,9 +51,13 @@ class EntityUtil {
                         throw new RuntimeException("有两个字段被标注为@ID，我们这个玩具系统暂不支持，见谅");
                     }
                     entityInfo.setIdDBName(NameUtil.getDataBaseName(declaredField.getName()));
+                    entityInfo.setIdFieldName(declaredField.getName());
                 }
                 entityInfo.getFiledName2DBName().put(declaredField.getName(), NameUtil.getDataBaseName(declaredField.getName()));
                 entityInfo.getFieldName2Type().put(declaredField.getName(), declaredField.getType());
+            }
+            if (entityInfo.getIdFieldName() == null) {
+
             }
             classEntityInfoMap.put(entity, entityInfo);
         }
