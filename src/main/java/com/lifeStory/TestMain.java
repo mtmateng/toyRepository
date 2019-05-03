@@ -1,10 +1,12 @@
 package com.lifeStory;
 
-import com.lifeStory.repository.CaseRepository;
+import com.lifeStory.baseRepo.MyBaseRepoImpl;
 import com.lifeStory.repository.StudentRepository;
+import com.lifeStory.repository2.CaseRepository;
 import com.lifeStory.test.returnVo.StudentVoClass;
+import com.toySpring.repository.baseRepository.BaseRepository;
+import com.toySpring.repository.custom.CustomRepoSetting;
 import com.toySpring.repository.utils.RepoStore;
-import com.zaxxer.hikari.HikariDataSource;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -33,23 +35,25 @@ public class TestMain {
 
         CaseRepository caseRepository = repoStore.getRepository(CaseRepository.class);
         caseRepository.findByCaseSubjectId("12345").ifPresent(System.out::println);
+        System.out.println(caseRepository.idPlus1("123456"));
 
     }
 
     public static void main(String[] args) {
 
-        DataSource dataSource = initDataSource();
-        TestMain testMain = new TestMain(new RepoStore(dataSource,
-            "com.lifeStory.model",
-            "com.lifeStory.repository"));
+        CustomRepoSetting customRepoSetting = new CustomRepoSetting();
+        customRepoSetting.setBaseRepositoryClass(BaseRepository.class);
+        customRepoSetting.setDataSourceName("student");
+        customRepoSetting.setEntityPackage("com.lifeStory.model");
+        customRepoSetting.setRepositoryPackage("com.lifeStory.repository");
 
-        insertSth(dataSource);
+        CustomRepoSetting customRepoSetting2 = new CustomRepoSetting();
+        customRepoSetting2.setBaseRepositoryClass(MyBaseRepoImpl.class);
+        customRepoSetting2.setDataSourceName("case");
+        customRepoSetting2.setEntityPackage("com.lifeStory.model2");
+        customRepoSetting2.setRepositoryPackage("com.lifeStory.repository2");
 
-        testMain.test();
-
-    }
-
-    private static void insertSth(DataSource dataSource) {
+        TestMain testMain = new TestMain(new RepoStore(TestMain.class, DataSourceStore.class, customRepoSetting, customRepoSetting2));
 
         String sql = "INSERT INTO `student` (id, name, gender, birthday) VALUES \n" +
             "(1,'mt','male','20180102'),\n" +
@@ -64,10 +68,19 @@ public class TestMain {
             "('1234567','A918271927','asdihalkjdbnakdbklac','王大全','刑事','聚众吸毒','20180202','容留他人吸毒'),\n" +
             "('12345678','A918271927','asdihalkjdbnakdbklac','王大全','刑事','聚众吸毒','20180202','容留他人吸毒');";
 
+        insertSth(DataSourceStore.getDataSource("student"), sql);
+        insertSth(DataSourceStore.getDataSource("case"), sql2);
+
+        testMain.test();
+
+    }
+
+    private static void insertSth(DataSource dataSource, String sql) {
+
+
         try (Connection connection = dataSource.getConnection();
              Statement statement = connection.createStatement()) {
             statement.execute(sql);
-            statement.execute(sql2);
         } catch (SQLException e) {
             throw new RuntimeException("执行%s失败", e);
         }
@@ -76,7 +89,7 @@ public class TestMain {
 
     private static DataSource initDataSource() {
 
-        return DataSourceStore.getDatasource();
+        return DataSourceStore.getDataSource("");
 
     }
 

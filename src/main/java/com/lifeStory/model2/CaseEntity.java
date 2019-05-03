@@ -1,4 +1,4 @@
-package com.lifeStory.model;
+package com.lifeStory.model2;
 
 import lombok.Data;
 

@@ -18,7 +18,7 @@ public class StudentRepositoryImpl implements StudentInterface {
 
     public StudentRepositoryImpl() {
 
-        this.dataSource = DataSourceStore.getDatasource();
+        this.dataSource = DataSourceStore.getDataSource("student");
 
     }
 

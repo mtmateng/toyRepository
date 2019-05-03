@@ -1,22 +1,38 @@
 package com.lifeStory;
 
 import com.zaxxer.hikari.HikariDataSource;
-import lombok.Getter;
 
 import javax.sql.DataSource;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 public final class DataSourceStore {
 
-    @Getter
-    private static final DataSource datasource;
+    private static final Map<String, DataSource> datasourceMap = new HashMap<>();
 
     static {
-        HikariDataSource innerDataSource = new HikariDataSource();
-        innerDataSource.setJdbcUrl("jdbc:h2:mem:test");
-        innerDataSource.setDriverClassName("org.h2.Driver");
-        innerDataSource.setUsername("testdb");
-        innerDataSource.setPassword("testdb");
-        datasource = innerDataSource;
+        HikariDataSource dataSource = new HikariDataSource();
+        dataSource.setJdbcUrl("jdbc:h2:mem:test");
+        dataSource.setDriverClassName("org.h2.Driver");
+        dataSource.setUsername("testdb");
+        dataSource.setPassword("testdb");
+        datasourceMap.put("student", dataSource);
+    }
+
+    static {
+        HikariDataSource dataSource = new HikariDataSource();
+        dataSource.setJdbcUrl("jdbc:h2:mem:test2");
+        dataSource.setDriverClassName("org.h2.Driver");
+        dataSource.setUsername("testdb");
+        dataSource.setPassword("testdb");
+        datasourceMap.put("case", dataSource);
+    }
+
+    public static DataSource getDataSource(String name) {
+
+        return Optional.ofNullable(datasourceMap.get(name)).orElseThrow(() -> new RuntimeException("名为：" + name + "的dataSource不存在"));
+
     }
 
 

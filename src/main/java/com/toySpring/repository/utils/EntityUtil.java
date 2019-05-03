@@ -57,7 +57,7 @@ class EntityUtil {
                 entityInfo.getFieldName2Type().put(declaredField.getName(), declaredField.getType());
             }
             if (entityInfo.getIdFieldName() == null) {
-
+                throw new RuntimeException(String.format("%s实体没有找到Id字段", entity.getName()));
             }
             classEntityInfoMap.put(entity, entityInfo);
         }

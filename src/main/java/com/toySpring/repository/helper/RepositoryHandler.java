@@ -284,7 +284,7 @@ public class RepositoryHandler<T, ID> implements InvocationHandler {
             try {
                 interface2ImplInstanceMap.put(otherInterface, ClassUtils.findClassByNameAndInterface(repo.getSimpleName() + "Impl", otherInterface).newInstance());
             } catch (Exception e) {
-                throw new RuntimeException(String.format("%sImpl没有找到，请检查", repo.getName()));
+                throw new RuntimeException(String.format("%sImpl没有找到，请检查", otherInterface.getName()), e);
             }
         }
         return interface2ImplInstanceMap.get(otherInterface);
