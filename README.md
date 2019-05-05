@@ -330,13 +330,13 @@
 
 4. 多数据源的准备
 
-   Spring本身是**"约定大于配置"**，约定了很多内容，因此我这里也不要脸地用了**一些约定**
+   Spring本身是**约定大于配置**，约定了很多内容，因此我这里也不要脸地用了一些约定
 
    在多数据源的实现上，Spring是通过`@EnableJpaRepository`来定制化，我这里使用了一个
 
    `com.toySpring.repository.custom.CustomRepoSetting`来实现的，可以在这里面指定要扫描的`Entity`所在包名，`Repository`所在包名，以及`DataSource`的名字，之后传给`RepoStore`来生成我们需要的业务Repository代理类。
 
-   其中，DataSource必须由用户预定义好，定义在什么类里面不重要，但这个类比如有一个静态方法，其声明为`public static DataSource getDataSource(String name) {}`，根据名字返回一个`DataSource`，在我的测试代码里，这个类叫做`com.lifeStory.DataSourceStore`，这个类也要被传入`RepoStore`的构造函数，以获得这些DataSource。
+   其中，DataSource必须由用户预定义好，定义在什么类里面不重要，但这个类必须有一个静态方法，其声明为`public static DataSource getDataSource(String name) {}`，根据名字返回一个`DataSource`，在我的测试代码里，这个类叫做`com.lifeStory.DataSourceStore`，这个类也要被传入`RepoStore`的构造函数，以获得这些DataSource。
 
 5. RepoStore
 
