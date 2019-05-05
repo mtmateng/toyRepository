@@ -313,6 +313,8 @@
 
    当然，传入Class参数的方法，如上文所述的`<T> List<T> findByGender(String gender, Class<T> type);`，其解析需要推迟到运行时才能进行，因为我们尚且不知道哪些具体的类会被传进来，但只要进行一次，我们也保存相应的`SQLMethodInfo`信息，以加速之后的访问。
 
+   鉴于SQL语句本身的复杂性，查询条件其实比较复杂，where字句可以包括like、startsWith、is null、contains这样的语法，Spring的动态解析方法名支持这些语法，甚至还支持关联表查询。而我们这个项目目前还无力支持这么复杂的解析，因此只能支持findByField1AndField2()这样的查询。在返回值方面，也没有Spring支持的那么丰富，只支持List、Collection(这两个实际上会生成ArrayList的返回值)，Set(返回HashSet)，Optional，以及接口、传入的Class参数，或者单独的实体类。
+
 3. 自定义方法。
 
    我们基于这样的一个事实，即所有声明在业务Repository扩展的接口中的方法，我们都提供了实现。比如我们上面的这个声明：
