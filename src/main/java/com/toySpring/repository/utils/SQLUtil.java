@@ -3,7 +3,6 @@ package com.toySpring.repository.utils;
 import com.toySpring.repository.helper.EntityInfo;
 import com.toySpring.repository.helper.ReturnValueHandler;
 import com.toySpring.repository.helper.SelectSQLMethodInfo;
-import com.toySpring.repository.utils.databaseDialects.DialectBuilder;
 import com.toySpring.repository.utils.databaseDialects.DialectBuilderFactory;
 
 import javax.sql.DataSource;
@@ -148,29 +147,28 @@ public class SQLUtil {
 
     public static <T> void executeUpdateSQL(DataSource dataSource, EntityInfo entityInfo, T entity) {
 
-        String sql = buildUpdateSQLWithArgs(entityInfo, entity);
+        String sql = buildUpdateSQLWithArgs(dataSource, entityInfo, entity);
 
         executeSQL(sql, dataSource);
 
     }
 
-    private static <T> String buildUpdateSQLWithArgs(EntityInfo entityInfo, T entity) {
+    private static <T> String buildUpdateSQLWithArgs(DataSource dataSource, EntityInfo entityInfo, T entity) {
 
-
-
+        return DialectBuilderFactory.getDialectBuilder(dataSource).buildUpdateSQL(entityInfo, entity);
     }
 
 
     public static <T> void executeInsertSQL(DataSource dataSource, EntityInfo entityInfo, T entity) {
 
-        String sql = buildInsertSQLWithArgs(entityInfo, entity);
+        String sql = buildInsertSQLWithArgs(dataSource, entityInfo, entity);
         executeSQL(sql, dataSource);
 
     }
 
-    private static <T> String buildInsertSQLWithArgs(EntityInfo entityInfo, T entity) {
+    private static <T> String buildInsertSQLWithArgs(DataSource dataSource, EntityInfo entityInfo, T entity) {
 
-
+        return DialectBuilderFactory.getDialectBuilder(dataSource).buildInsertSQL(entityInfo, entity);
     }
 
 }

@@ -54,7 +54,7 @@ public class BaseRepository<T, ID> implements Repository<T, ID> {
             SelectSQLMethodInfo methodInfo = new SelectSQLMethodInfo();
             List<String> selectFieldNames = new ArrayList<>(entityInfo.getFiledName2DBName().keySet());
             List<String> queryFieldNames = Collections.singletonList(entityInfo.getIdFieldName());
-            methodInfo.setSQLTemplate(SQLUtil.buildSelectSQLTemplate(entityInfo, selectFieldNames, queryFieldNames));
+            methodInfo.setSQLTemplate(SQLUtil.buildSelectSQLTemplate(dataSource, entityInfo, selectFieldNames, queryFieldNames));
             methodInfo.setSelectFieldsNames(selectFieldNames);
             methodInfo.setQueryFieldsNames(queryFieldNames);
             methodInfo.setActualClass(domainClass);

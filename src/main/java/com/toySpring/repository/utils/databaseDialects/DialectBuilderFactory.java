@@ -10,18 +10,20 @@ public class DialectBuilderFactory {
 
     public static DialectBuilder getDialectBuilder(DataSource dataSource) {
 
-        if (dataSourceDialectBuilderMap.get(dataSource) == null) {
-            dataSourceDialectBuilderMap.put(dataSource, getNewDialectBuilder(dataSource));
-        }
-
         return dataSourceDialectBuilderMap.get(dataSource);
     }
 
-    private static DialectBuilder getNewDialectBuilder(DataSource dataSource) {
+    public static void registerDialect(DataSource dataSource, String url) {
 
-        //todo
-        return new H2DialectBuilder();
+        DialectBuilder dialectBuilder;
+        url = url.replaceFirst("jdbc:", "").toLowerCase();
+        if (url.startsWith("h2")) {
+            dialectBuilder = new H2DialectBuilder();
+        } else {
+            throw new RuntimeException("尚不支持这种数据库");
+        }
 
+        dataSourceDialectBuilderMap.put(dataSource, dialectBuilder);
     }
 
 }
