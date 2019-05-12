@@ -2,7 +2,7 @@ package com.toySpring.repository.utils;
 
 import com.toySpring.repository.helper.EntityInfo;
 import com.toySpring.repository.helper.ReturnValueHandler;
-import com.toySpring.repository.helper.SQLMethodInfo;
+import com.toySpring.repository.helper.SelectSQLMethodInfo;
 
 import javax.sql.DataSource;
 import java.beans.PropertyDescriptor;
@@ -17,6 +17,14 @@ import java.util.*;
 public class SQLUtil {
 
     private static final String CREATE_TABLE_TEMPLATE = "CREATE TABLE IF NOT EXISTS `%s` (%s %s) %s %s;";
+    private static final Set<Class> NO_QUOTE_CLASS = new HashSet<Class>() {
+        {
+            add(Integer.class);
+            add(int.class);
+            add(double.class);
+            add(Double.class);
+        }
+    };
 
     static String generateCreateTableSql(EntityInfo entityInfo) {
 
@@ -73,21 +81,21 @@ public class SQLUtil {
         }
     }
 
-    public static <T> Object executeSelectSQL(DataSource dataSource, SQLMethodInfo methodInfo, Object[] args, Class<T> resultClass, EntityInfo entityInfo) {
+    public static <T> Object executeSelectSQL(DataSource dataSource, SelectSQLMethodInfo methodInfo, Object[] args, Class<T> resultClass, EntityInfo entityInfo) {
 
-        String sql = buildSQLWithArgs(methodInfo.getSQLTemplate(), args);
-        List<T> results = executeSelectSQL(dataSource, sql, resultClass, entityInfo, methodInfo.getSelectFieldsNames());
+        String sql = buildSelectSQLWithArgs(methodInfo.getSQLTemplate(), args);
+        List<T> results = actualDoExecuteSelectSQL(dataSource, sql, resultClass, entityInfo, methodInfo.getSelectFieldsNames());
         return buildReturnValue(results, methodInfo);
 
     }
 
-    private static String buildSQLWithArgs(String sql, Object[] args) {
+    private static String buildSelectSQLWithArgs(String sql, Object[] args) {
 
         return String.format(sql, args);
 
     }
 
-    private static <T> List<T> executeSelectSQL(DataSource dataSource, String sql, Class<T> resultClass, EntityInfo entityInfo, List<String> selectFieldsNames) {
+    private static <T> List<T> actualDoExecuteSelectSQL(DataSource dataSource, String sql, Class<T> resultClass, EntityInfo entityInfo, List<String> selectFieldsNames) {
 
         List<T> results = new ArrayList<>();
         try (Connection connection = dataSource.getConnection();
@@ -148,7 +156,7 @@ public class SQLUtil {
         }
     }
 
-    private static <T> Object buildReturnValue(List<T> results, SQLMethodInfo methodInfo) {
+    private static <T> Object buildReturnValue(List<T> results, SelectSQLMethodInfo methodInfo) {
 
         if (results.size() > 1 && (methodInfo.getWrapClass() == null || methodInfo.getWrapClass() == Optional.class)) {
 
@@ -178,13 +186,13 @@ public class SQLUtil {
 
     }
 
-    public static String actualBuildSQLTemplate(EntityInfo entityInfo, List<String> selectFieldNames, List<String> queryFieldNames) {
-        StringBuilder sqlSb = new StringBuilder().append("select ");
+    public static String actualBuildSelectSQLTemplate(EntityInfo entityInfo, List<String> selectFieldNames, List<String> queryFieldNames) {
+        StringBuilder sqlSb = new StringBuilder().append("SELECT ");
         for (String selectFieldName : selectFieldNames) {
             sqlSb.append(entityInfo.getFiledName2DBName().get(selectFieldName)).append(", ");
         }
-        sqlSb.delete(sqlSb.length() - 2, sqlSb.length()).append(" from ").append(entityInfo.getEntityDBName());
-        sqlSb.append(" where ");
+        sqlSb.delete(sqlSb.length() - 2, sqlSb.length()).append(" FROM ").append(entityInfo.getEntityDBName());
+        sqlSb.append(" WHERE ");
 
         for (int i = 0; i != queryFieldNames.size(); ++i) {
             sqlSb.append(entityInfo.getFiledName2DBName().get(queryFieldNames.get(i))).append("=");
@@ -197,6 +205,83 @@ public class SQLUtil {
         }
 
         return sqlSb.toString().replaceFirst(" and $", "");
+    }
+
+    public static <T> void executeUpdateSQL(DataSource dataSource, EntityInfo entityInfo, T entity) {
+
+        String sql = buildUpdateSQLWithArgs(entityInfo, entity);
+
+        actualExecuteSQL(dataSource, sql);
+
+    }
+
+    private static void actualExecuteSQL(DataSource dataSource, String sql) {
+
+        try (Connection connection = dataSource.getConnection();
+             Statement statement = connection.createStatement()) {
+
+            statement.execute(sql);
+
+        } catch (SQLException e) {
+            throw new RuntimeException(String.format("执行SQL语句：%s失败", sql), e);
+        }
+
+    }
+
+    private static <T> String buildUpdateSQLWithArgs(EntityInfo entityInfo, T entity) {
+
+        try {
+            StringBuilder sb = new StringBuilder("UPDATE ").append(entityInfo.getEntityDBName()).append(" SET ");
+            for (String fieldName : entityInfo.getFiledName2DBName().keySet()) {
+                PropertyDescriptor prop = new PropertyDescriptor(fieldName, entityInfo.getEntityClass());
+                sb.append(entityInfo.getFiledName2DBName().get(fieldName))
+                    .append(" = ")
+                    .append(NO_QUOTE_CLASS.contains(entityInfo.getFieldName2Type().get(fieldName)) ? "" : "'")
+                    .append(prop.getReadMethod().invoke(entity))
+                    .append(NO_QUOTE_CLASS.contains(entityInfo.getFieldName2Type().get(fieldName)) ? "" : "'")
+                    .append(" , ");
+            }
+            PropertyDescriptor prop = new PropertyDescriptor(entityInfo.getIdFieldName(), entityInfo.getEntityClass());
+            sb.delete(sb.length() - 3, sb.length()).append(" WHERE ").append(entityInfo.getIdDBName()).append(" = ")
+                .append(NO_QUOTE_CLASS.contains(entityInfo.getFieldName2Type().get(entityInfo.getIdFieldName())) ? prop.getReadMethod().invoke(entity) : "'" + prop.getReadMethod().invoke(entity) + "'");
+            return sb.toString();
+        } catch (Exception e) {
+            throw new RuntimeException(String.format("为%s构建Update语句时失败", entity));
+        }
+
+    }
+
+
+    public static <T> void executeInsertSQL(DataSource dataSource, EntityInfo entityInfo, T entity) {
+
+        String sql = buildInsertSQLWithArgs(entityInfo, entity);
+        actualExecuteSQL(dataSource, sql);
+
+    }
+
+    private static <T> String buildInsertSQLWithArgs(EntityInfo entityInfo, T entity) {
+
+        try {
+            StringBuilder sb = new StringBuilder("INSERT INTO ").append(entityInfo.getEntityDBName()).append(" (");
+            Set<String> fieldNames = entityInfo.getFiledName2DBName().keySet();
+            for (String fieldName : fieldNames) {
+                sb.append(entityInfo.getFiledName2DBName().get(fieldName)).append(" , ");
+            }
+            sb.delete(sb.length() - 2, sb.length()).append(") VALUES (");
+            for (String fieldName : entityInfo.getFiledName2DBName().keySet()) {
+                PropertyDescriptor prop = new PropertyDescriptor(fieldName, entityInfo.getEntityClass());
+                sb.append(NO_QUOTE_CLASS.contains(entityInfo.getFieldName2Type().get(fieldName)) ? "" : "'")
+                    .append(prop.getReadMethod().invoke(entity))
+                    .append(NO_QUOTE_CLASS.contains(entityInfo.getFieldName2Type().get(fieldName)) ? "" : "'")
+                    .append(" , ");
+
+            }
+            sb.delete(sb.length() - 3, sb.length()).append(")");
+            return sb.toString();
+        } catch (Exception e) {
+            throw new RuntimeException(String.format("为%s构建Insert语句时失败", entity));
+        }
+
     }
 
 }

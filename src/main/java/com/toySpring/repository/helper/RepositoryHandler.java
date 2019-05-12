@@ -12,17 +12,33 @@ import java.lang.reflect.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.toySpring.repository.utils.SQLUtil.actualBuildSQLTemplate;
-
+/**
+ * 这个类是Repository系列接口的动态代理，每一个业务Repository都会产生一个Handler，生成一个Proxy
+ * 在这个类的实例创建时，我们首先会解析它的各种方法，分为三种情况：
+ * 1. 如果这些方法是其扩展的接口中的方法，则我们必然
+ *    能找到这个方法的实现，或者在BaseRepository里，或者在用户自己提供的BaseRepository里。
+ *    针对这些方法，我们建立一个接口方法到实现方法的Map，这样当业务Repository相应方法被调用时
+ *    我们就能准确调用实际的方法。
+ * 2. 如果这些方法不继承于任何接口，并且并不是参数化的方法，即不是类似<T> List<T> findByGender(String gender, Class<T> type);
+ *    这样的声明，那我们直接解析方法名，生成SQL语句，并且解析方法的返回值，确定要返回什么类型的东西，将方法
+ *    的解析结果组织成一个SQLMethodInfo类，并建立一个Method到SQLMethodInfo的映射。
+ * 3. 如果这些方法不继承于任何借口，并且是参数化方法，那就将解析推迟到运行时。具体解析方式和第二个相同。
+ *
+ * 为了稍微切分业务功能界面，这个类只做Method的解析，所有和SQL生成、SQL结果解析的工作都放在SQLUtil里面做了。这样也方便切换数据库时
+ * 数据库方言的对接。
+ *
+ * @param <T> Repository管理的实体类
+ * @param <ID> Repository管理的实体类的ID
+ */
 public class RepositoryHandler<T, ID> implements InvocationHandler {
 
     private final BaseRepository<T, ID> baseRepository;
     private final DataSource dataSource;
     private final EntityInfo entityInfo;
 
-    private final Map<Method, SQLMethodInfo> method2MethodInfoMap = new HashMap<>();
+    private final Map<Method, SelectSQLMethodInfo> method2MethodInfoMap = new HashMap<>();
     private final Map<Method, Pair<Object, Method>> method2RealMethodMap = new HashMap<>();
-    private final Map<Method, Map<Class, SQLMethodInfo>> method2MethodInfoWithClassMap = new HashMap<>();
+    private final Map<Method, Map<Class, SelectSQLMethodInfo>> method2MethodInfoWithClassMap = new HashMap<>();
     private final Map<Class, Object> interface2ImplInstanceMap = new HashMap<>();
 
     public RepositoryHandler(BaseRepository<T, ID> baseRepository, EntityInfo entityInfo, DataSource dataSource,
@@ -53,12 +69,12 @@ public class RepositoryHandler<T, ID> implements InvocationHandler {
         }
     }
 
-    private SQLMethodInfo buildSQLTemplateWithClass(Method method, Class parameterClass, EntityInfo entityInfo) {
+    private SelectSQLMethodInfo buildSQLTemplateWithClass(Method method, Class parameterClass, EntityInfo entityInfo) {
 
-        SQLMethodInfo methodInfo = new SQLMethodInfo();
+        SelectSQLMethodInfo methodInfo = new SelectSQLMethodInfo();
         List<String> selectFieldNames = checkAndReturnFieldNamesByClass(method, entityInfo, parameterClass, methodInfo);
         List<String> queryFieldNames = getQueryFiledNamesByMethodName(method, entityInfo);
-        String SQL = actualBuildSQLTemplate(entityInfo, selectFieldNames, queryFieldNames);
+        String SQL = SQLUtil.actualBuildSelectSQLTemplate(entityInfo, selectFieldNames, queryFieldNames);
 
         methodInfo.setMethod(method);
         methodInfo.setSQLTemplate(SQL);
@@ -68,7 +84,7 @@ public class RepositoryHandler<T, ID> implements InvocationHandler {
 
     }
 
-    private List<String> checkAndReturnFieldNamesByClass(Method method, EntityInfo entityInfo, Class parameterClass, SQLMethodInfo methodInfo) {
+    private List<String> checkAndReturnFieldNamesByClass(Method method, EntityInfo entityInfo, Class parameterClass, SelectSQLMethodInfo methodInfo) {
 
         List<String> ret = new ArrayList<>();
         Pair<Class, Class> realReturnType = checkAndGetReturnType(method);
@@ -109,7 +125,7 @@ public class RepositoryHandler<T, ID> implements InvocationHandler {
     private void buildMethod2MethodInfoMap(EntityInfo entityInfo, Class<T> domainClass, Class<Repository> repo) {
 
         for (Method declaredMethod : repo.getDeclaredMethods()) {
-            SQLMethodInfo methodInfo = checkMethodDeclarationAndGetSQLTemplate(declaredMethod, entityInfo, domainClass);
+            SelectSQLMethodInfo methodInfo = checkMethodDeclarationAndGetSQLTemplate(declaredMethod, entityInfo, domainClass);
             method2MethodInfoMap.put(declaredMethod, methodInfo);
         }
 
@@ -123,7 +139,7 @@ public class RepositoryHandler<T, ID> implements InvocationHandler {
      * 当返回模板参数时，也会对比该模板参数类中字段的类型和实体类中对应字段的类型，而且需要有且只有一个类型为Class的参数，用以指定返回参数
      * @param method repo中直接声明的函数
      */
-    private SQLMethodInfo checkMethodDeclarationAndGetSQLTemplate(Method method, EntityInfo entityInfo, Class domainClass) {
+    private SelectSQLMethodInfo checkMethodDeclarationAndGetSQLTemplate(Method method, EntityInfo entityInfo, Class domainClass) {
 
         // 检查函数名，目前只支持find方法
         if (!method.getName().startsWith("find")) {
@@ -146,8 +162,8 @@ public class RepositoryHandler<T, ID> implements InvocationHandler {
             throw new RuntimeException(String.format("%s.%s()返回值%s不支持", method.getDeclaringClass().getName(), method.getName(), returnType.getValue().getName()));
         }
         List<String> queryFieldNames = getQueryFiledNamesByMethodName(method, entityInfo);
-        String SQL = actualBuildSQLTemplate(entityInfo, selectFieldNames, queryFieldNames);
-        SQLMethodInfo methodInfo = new SQLMethodInfo();
+        String SQL = SQLUtil.actualBuildSelectSQLTemplate(entityInfo, selectFieldNames, queryFieldNames);
+        SelectSQLMethodInfo methodInfo = new SelectSQLMethodInfo();
         methodInfo.setMethod(method);
         methodInfo.setSelectFieldsNames(selectFieldNames);
         methodInfo.setQueryFieldsNames(queryFieldNames);

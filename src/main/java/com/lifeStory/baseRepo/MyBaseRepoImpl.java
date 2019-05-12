@@ -2,14 +2,12 @@ package com.lifeStory.baseRepo;
 
 import com.toySpring.repository.baseRepository.BaseRepository;
 import com.toySpring.repository.helper.EntityInfo;
-import com.toySpring.repository.helper.SQLMethodInfo;
+import com.toySpring.repository.helper.SelectSQLMethodInfo;
 import lombok.Getter;
 
 import javax.sql.DataSource;
 import java.beans.PropertyDescriptor;
 import java.util.*;
-
-import static com.toySpring.repository.utils.SQLUtil.actualBuildSQLTemplate;
 
 public class MyBaseRepoImpl<T, ID> extends BaseRepository<T, ID> implements MyBaseRepo<T, ID> {
 
@@ -22,7 +20,7 @@ public class MyBaseRepoImpl<T, ID> extends BaseRepository<T, ID> implements MyBa
     @Getter
     private final DataSource dataSource;
 
-    private final Map<String, SQLMethodInfo> methodInfoMap = new HashMap<>();
+    private final Map<String, SelectSQLMethodInfo> methodInfoMap = new HashMap<>();
 
     public MyBaseRepoImpl(Class<T> domainClass, Class<ID> idClass, EntityInfo entityInfo, DataSource dataSource) {
 

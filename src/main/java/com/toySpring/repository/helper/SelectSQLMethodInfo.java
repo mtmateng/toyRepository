@@ -6,7 +6,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 
 @Data
-public class SQLMethodInfo {
+public class SelectSQLMethodInfo {
 
     private Method method;
     private String SQLTemplate;

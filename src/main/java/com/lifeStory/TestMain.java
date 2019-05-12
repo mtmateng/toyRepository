@@ -1,6 +1,7 @@
 package com.lifeStory;
 
 import com.lifeStory.baseRepo.MyBaseRepoImpl;
+import com.lifeStory.model.Student;
 import com.lifeStory.repository.StudentRepository;
 import com.lifeStory.repository2.CaseRepository;
 import com.lifeStory.test.returnVo.StudentVoClass;
@@ -12,6 +13,7 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDate;
 
 public class TestMain {
 
@@ -25,6 +27,20 @@ public class TestMain {
 
         StudentRepository studentRepository = repoStore.getRepository(StudentRepository.class);
         System.out.println("++++++++以下是studentRepository的测试++++++++");
+        System.out.println("\n--------测试Insert");
+
+        Student student = new Student();
+        student.setId(6);
+        student.setName("ma");
+        student.setBirthday(LocalDate.now());
+        student.setGender("Male");
+        studentRepository.save(student);
+        System.out.println(studentRepository.findById(6));
+        System.out.println("\n--------测试update");
+        student.setName("zh");
+        studentRepository.save(student);
+        System.out.println(studentRepository.findById(6));
+
         System.out.println("\n--------测试BaseRepository工作情况，findById");
         System.out.println(studentRepository.findById(1));
         System.out.println("\n--------测试查询方法返回接口时，只查询部分字段，findByname");
@@ -65,17 +81,17 @@ public class TestMain {
         TestMain testMain = new TestMain(new RepoStore(TestMain.class, DataSourceStore.class, customRepoSetting, customRepoSetting2));
 
         String sql = "INSERT INTO `student` (id, name, gender, birthday) VALUES \n" +
-                "(1,'mt','male','20180102'),\n" +
-                "(2,'syx','male','20180302'),\n" +
-                "(3,'zmz','female','20180902'),\n" +
-                "(4,'ly','female','20160102'),\n" +
-                "(5,'lry','male','20180402');";
+            "(1,'mt','male','20180102'),\n" +
+            "(2,'syx','male','20180302'),\n" +
+            "(3,'zmz','female','20180902'),\n" +
+            "(4,'ly','female','20160102'),\n" +
+            "(5,'lry','male','20180402');";
 
         String sql2 = "INSERT INTO `case_entity` (case_subject_id, case_id, case_guid, case_name, case_type, summary, update_time, category) VALUES \n" +
-                "('12345','A918271927','asdihalkjdbnakdbklac','王大全','刑事','聚众吸毒','20180202','容留他人吸毒'),\n" +
-                "('123456','A918271927','asdihalkjdbnakdbklac','王大全','刑事','聚众吸毒','20180202','容留他人吸毒'),\n" +
-                "('1234567','A918271927','asdihalkjdbnakdbklac','王大全','刑事','聚众吸毒','20180202','容留他人吸毒'),\n" +
-                "('12345678','A918271927','asdihalkjdbnakdbklac','王大全','刑事','聚众吸毒','20180202','容留他人吸毒');";
+            "('12345','A918271927','asdihalkjdbnakdbklac','王大全','刑事','聚众吸毒','20180202','容留他人吸毒'),\n" +
+            "('123456','A918271927','asdihalkjdbnakdbklac','王大全','刑事','聚众吸毒','20180202','容留他人吸毒'),\n" +
+            "('1234567','A918271927','asdihalkjdbnakdbklac','王大全','刑事','聚众吸毒','20180202','容留他人吸毒'),\n" +
+            "('12345678','A918271927','asdihalkjdbnakdbklac','王大全','刑事','聚众吸毒','20180202','容留他人吸毒');";
 
         insertSth(DataSourceStore.getDataSource("student"), sql);
         insertSth(DataSourceStore.getDataSource("case"), sql2);
@@ -95,12 +111,5 @@ public class TestMain {
         }
 
     }
-
-    private static DataSource initDataSource() {
-
-        return DataSourceStore.getDataSource("");
-
-    }
-
 
 }

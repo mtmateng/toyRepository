@@ -309,7 +309,7 @@
 
    把SQL模板的生成放在这里进行，有两个好处，一个是在初始化时就可以检查用户声明的正确性，减少用户运行时出错的机会；二是可以减少运行时解析方法名的开销，直接用SQL模板套上参数就可以运行了。
 
-   对于每个解析后的方法，我们生成了一个`com.toySpring.repository.helper.SQLMethodInfo`类，里面描述了这个方法select了哪些字段，query by哪些字段，返回值是什么容器类（如Optional、List），什么实际类（如上面的StudentVo，Student）等，以便在运行时调用该方法，不需要对方法再进行任何解析。
+   对于每个解析后的方法，我们生成了一个`com.toySpring.repository.helper.SelectSQLMethodInfo`类，里面描述了这个方法select了哪些字段，query by哪些字段，返回值是什么容器类（如Optional、List），什么实际类（如上面的StudentVo，Student）等，以便在运行时调用该方法，不需要对方法再进行任何解析。
 
    当然，传入Class参数的方法，如上文所述的`<T> List<T> findByGender(String gender, Class<T> type);`，其解析需要推迟到运行时才能进行，因为我们尚且不知道哪些具体的类会被传进来，但只要进行一次，我们也保存相应的`SQLMethodInfo`信息，以加速之后的访问。
 
