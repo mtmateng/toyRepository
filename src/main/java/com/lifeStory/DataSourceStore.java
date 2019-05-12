@@ -1,7 +1,6 @@
 package com.lifeStory;
 
 import com.toySpring.repository.utils.ToyDataSourceBuilder;
-import com.zaxxer.hikari.HikariDataSource;
 
 import javax.sql.DataSource;
 import java.util.HashMap;
