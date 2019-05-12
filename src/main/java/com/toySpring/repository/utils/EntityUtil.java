@@ -31,7 +31,7 @@ class EntityUtil {
     private void createTableIfNotExists(DataSource dataSource) {
 
         for (Class<?> aClass : classEntityInfoMap.keySet()) {
-            String sql = SQLUtil.generateCreateTableSql(classEntityInfoMap.get(aClass));
+            String sql = SQLUtil.generateCreateTableSql(dataSource, classEntityInfoMap.get(aClass));
             SQLUtil.executeSQL(sql, dataSource);
         }
 
