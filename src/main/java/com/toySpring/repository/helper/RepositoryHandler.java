@@ -74,7 +74,7 @@ public class RepositoryHandler<T, ID> implements InvocationHandler {
         SelectSQLMethodInfo methodInfo = new SelectSQLMethodInfo();
         List<String> selectFieldNames = checkAndReturnFieldNamesByClass(method, entityInfo, parameterClass, methodInfo);
         List<String> queryFieldNames = getQueryFiledNamesByMethodName(method, entityInfo);
-        String SQL = SQLUtil.actualBuildSelectSQLTemplate(entityInfo, selectFieldNames, queryFieldNames);
+        String SQL = SQLUtil.buildSelectSQLTemplate(dataSource, entityInfo, selectFieldNames, queryFieldNames);
 
         methodInfo.setMethod(method);
         methodInfo.setSQLTemplate(SQL);
@@ -162,7 +162,7 @@ public class RepositoryHandler<T, ID> implements InvocationHandler {
             throw new RuntimeException(String.format("%s.%s()返回值%s不支持", method.getDeclaringClass().getName(), method.getName(), returnType.getValue().getName()));
         }
         List<String> queryFieldNames = getQueryFiledNamesByMethodName(method, entityInfo);
-        String SQL = SQLUtil.actualBuildSelectSQLTemplate(entityInfo, selectFieldNames, queryFieldNames);
+        String SQL = SQLUtil.buildSelectSQLTemplate(dataSource, entityInfo, selectFieldNames, queryFieldNames);
         SelectSQLMethodInfo methodInfo = new SelectSQLMethodInfo();
         methodInfo.setMethod(method);
         methodInfo.setSelectFieldsNames(selectFieldNames);

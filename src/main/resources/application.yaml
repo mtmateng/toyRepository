@@ -1,0 +1,11 @@
+toySpring:
+  datasource:
+    url: jdbc:h2:mem:test
+    driver: org.h2.Driver
+    username: testdb
+    password: testdb
+  datasource2:
+    url: jdbc:h2:mem:test2
+    driver: org.h2.Driver
+    username: testdb2
+    password: testdb2
