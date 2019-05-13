@@ -172,107 +172,129 @@
 
 ### 主要代码结构
 
-1. `com.toySpring.repository.baseRepository`
+#### `com.toySpring.repository.baseRepository`
 
-   这个包里有三个类：
+这个包里有三个类：
 
-   + Repository，对应Spring中`Repository`系列标记接口。它的所有接口方法最终实现于同一个包下面的`BaseRepository`类中。
-   + BaseRepository。对应Spring中的`SimpleJPARepository`，是所有Repository接口的实现类，实现了`Repository`系列标记接口的所有方法。当然啦， 在我这个小项目里，这个系列接口只有`Repository`一个接口。当用户想要提供自定义的BaseRepository方法时，必须扩展这个类。
-   + BaseRepositoryFactory。当我们要用自定义的BaseRepository来替代原有的BaseRepository时，可以很容易地想到使用工厂方法，而我们的这个类也就是为了生产BaseRepository的。
++ Repository，对应Spring中`Repository`系列标记接口。它的所有接口方法最终实现于同一个包下面的`BaseRepository`类中。这里只演示了一个，其实Spring的继承树有四五层，包括`Repository`，`CrudRepository`、`PagingAndSortingRepository`、`JpaRepository`。
++ BaseRepository。对应Spring中的`SimpleJPARepository`，是所有Repository接口的实现类，实现了`Repository`系列标记接口的所有方法。当然啦， 在我这个小项目里，这个系列接口只有`Repository`一个接口。当用户想要提供自定义的BaseRepository方法时，必须扩展这个类。
++ BaseRepositoryFactory。当我们要用自定义的BaseRepository来替代原有的BaseRepository时，可以很容易地想到使用工厂方法，而我们的这个类也就是为了生产BaseRepository的。
 
-2. `com.toySpring.repository.custom`
+####`com.toySpring.repository.custom`
 
-   这个包是Spring中`@EnableJPARepository`的替代品，考虑到如果我要使用注解的话，配多数据源就需要多个注解，但一个类上面又不能标记重复注解，所以我就需要至少两个类，Spring是依靠它本身的依赖注入功能，结合`@Configuration`注解一起实现的多`@EnableJPARepository`注解，从而实现了多数据源。但我们显然很难参考这种方法，因为这样的话我们就必须实现Spring框架的很多功能。因此，我们这里采取了一种更简便的方式，即提供了一个`com.toySpring.repository.custom.CustomRepoSetting`类，如下：
+这个包是Spring中`@EnableJPARepository`的替代品，考虑到如果我要使用注解的话，配多数据源就需要多个注解，但一个类上面又不能标记重复注解，所以我就需要至少两个类，Spring是依靠它本身的依赖注入功能，结合`@Configuration`注解一起实现的多`@EnableJPARepository`注解，从而实现了多数据源。但我们显然很难参考这种方法，因为这样的话我们就必须实现Spring框架的很多功能。因此，我们这里采取了一种更简便的方式，即提供了一个`com.toySpring.repository.custom.CustomRepoSetting`类，如下：
 
-   ```java
-   public class CustomRepoSetting {
-       private String entityPackage = null;
-       private String repositoryPackage = null;
-       private String dataSourceName = "default";
-       private Class<? extends BaseRepository> baseRepositoryClass = null;
-   ·}
-   ```
+```java
+public class CustomRepoSetting {
+    private String entityPackage = null;
+    private String repositoryPackage = null;
+    private String dataSourceName = "default";
+    private Class<? extends BaseRepository> baseRepositoryClass = null;
+·}
+```
 
-   这个类的四个字段，分别对应了
+这个类的四个字段，分别对应了
 
-   + 需要扫描的实体类，如`Student`在哪个包里，如未提供，则默认扫描用户的main类所在包及其子包。
-   + 需要扫描的Repository，如`StudentRepository`在哪个包里，如未提供，则默认扫描用户的main类所在包及其子包。注意要和entityPackage中的entity对应起来，意思是说，假如这个包里有一个Repository，其管理的实体类是`Student`，那么`Student`必须在`entityPackage`里。
-   + dataSource名，即用于提供的dataSource的名字，如未提供，默认是default，我们的项目会从用户提供的类里面查找这个dataSource名，具体见`com.toySpring.repository.utils.RepoStore`。用户必须保证这个名字的dataSource存在。
-   + BaseRepository类，即用于提供`BaseRepository`，即用户的自定义的`BaseRepository`，默认值是上面的`com.toySpring.repository.baseRepository.Repository`类。
++ 需要扫描的实体类，如`Student`在哪个包里，如未提供，则默认扫描用户的main类所在包及其子包。
++ 需要扫描的Repository，如`StudentRepository`在哪个包里，如未提供，则默认扫描用户的main类所在包及其子包。注意要和entityPackage中的entity对应起来，意思是说，假如这个包里有一个Repository，其管理的实体类是`Student`，那么`Student`必须在`entityPackage`里。
++ dataSource名，即用于提供的dataSource的名字，如未提供，默认是default，我们的项目会从用户提供的类里面查找这个dataSource名，具体见`com.toySpring.repository.utils.RepoStore`。用户必须保证这个名字的dataSource存在。
++ BaseRepository类，即用于提供`BaseRepository`，即用户的自定义的`BaseRepository`，默认值是上面的`com.toySpring.repository.baseRepository.Repository`类。
 
-3. `com.toySpring.repository.helper`
+####  `com.toySpring.repository.helper`
 
-   一些重要的辅助类：
+一些重要的辅助类：
 
-   + EntityInfo
++ DataSourceConfigHolder
 
-     每一个受管理的实体，比如`Student`，都会有这样的一个类来描述它。包括实体类的class，id字段在实体类中的名字，id在数据库中的字段名，实体类在数据库中的名字，实体类字段名到数据库中字段名的映射，字段名到字段类型的映射。实体类中字段名到数据库中的字段名，是按照驼峰进行解析的，比如一个实体类，名字是`CaseEntity`，那么它在数据库中的表名会被解析为case_entity。
+  实际上用于容纳从配置文件中解析的DataSource配置信息。
 
-     同时这里也是留了一个接口，把所有实体信息的解析放在一个地方集中完成，之后要支持自定义时，比如像Spring那样支持`@Column`自定义字段名，`@Table`指定表名，都可以在一处集中完成，不需要在整个代码里搜索改来改去。
++ EntityInfo
 
-   + SQLMethodInfo
+  每一个受管理的实体，比如`Student`，都会有这样的一个类来描述它。包括实体类的class，id字段在实体类中的名字，id在数据库中的字段名，实体类在数据库中的名字，实体类字段名到数据库中字段名的映射，字段名到字段类型的映射。实体类中字段名到数据库中的字段名，是按照驼峰进行解析的，比如一个实体类，名字是`CaseEntity`，那么它在数据库中的表名会被解析为case_entity。
 
-     对于每一个定义在业务Repository中的方法，都会生成这样的一个类来描述它。包括Method、该Method生成的SQLTemplate、返回值的容器类(如Optional、List、Set等），返回值的真实类，如Student，StudentVo等，从返回值等解析出来的select子句中需要选择的字段，从方法名中解析的query子句中where的字段。
+  同时这里也是留了一个接口，把所有实体信息的解析放在一个地方集中完成，之后要支持自定义时，比如像Spring那样支持`@Column`自定义字段名，`@Table`指定表名，都可以在一处集中完成，不需要在整个代码里搜索改来改去。
 
-     把这些东西都集中在这里，也是为了便于管理，减少修改的影响面。
++ SelectSQLMethodInfo
 
-   + RepositoryHandler
+  对于每一个定义在业务Repository中的方法，都会生成这样的一个类来描述它。包括Method、该Method生成的SQLTemplate、返回值的容器类(如Optional、List、Set等），返回值的真实类，如Student，StudentVo等，从返回值等解析出来的select子句中需要选择的字段，从方法名中解析的query子句中where的字段。
 
-     即用户Repoository的动态代理的Handler。这个比较复杂，但阅读源码就容易理解是干嘛的了。
+  把这些东西都集中在这里，也是为了便于管理，减少修改的影响面。
 
-   + ReturnValueHandler
++ RepositoryHandler
 
-     即当用户Repository的方法中使用接口作为返回值(如上面的StudentVo)，这是返回值的动态代理handler。
+  即用户Repoository的动态代理的Handler。这个比较复杂，但阅读源码就容易理解是干嘛的了。
 
-4. `com.toySpring.repository.utils`
++ ReturnValueHandler
 
-   一些工具类。但显然我在起名上面过于随意了，这个包里面的东西比较混乱，什么只要想不明白该放到哪里，就先放到这里了。
+  即当用户Repository的方法中使用接口作为返回值(如上面的StudentVo)，这是返回值的动态代理handler。
 
-   + ClassUtils
+#### `com.toySpring.repository.utils`
 
-     用来搜索包里面的各种类的。因为毕竟我们要扫描包以获得Entity和Repsitory不是。
+一些工具类。但显然我在起名上面过于随意了，这个包里面的东西比较混乱，什么只要想不明白该放到哪里，就先放到这里了。
 
-   + EntityUtil
++ ClassUtils
 
-     扫描并构建EntityInfo的地方。
+  用来搜索包里面的各种类的。因为毕竟我们要扫描包以获得Entity和Repsitory不是。
 
-   + NameUtil
++ EntityUtil
 
-     完成实体类字段名到数据库字段名转换的Util
+  扫描并构建EntityInfo的地方。
 
-   + RepoStore
++ NameUtil
 
-     这个类似于Spring的ApplicationContext，超级超级简化版。实际上就是一个Map，建立了业务Repository的Class和Instance(实际是动态代理)之间的映射。当用户需要Repistory时，只需要像下面这样就可以了。
+  完成实体类字段名到数据库字段名转换的Util
 
-     ```java
-     StudentRepository studentRepository = repoStore.getRepository(StudentRepository.class);
-     ```
++ RepoStore
 
-     它的构造函数接受两个类参数，以及一个可变长参数：
+  这个类似于Spring的ApplicationContext，超级超级简化版。实际上就是一个Map，建立了业务Repository的Class和Instance(实际是动态代理)之间的映射。当用户需要Repistory时，只需要像下面这样就可以了。
 
-     ```java
-     public RepoStore(Class mainClass, Class<?> dataSourceStore, CustomRepoSetting... customRepoSettings) {}
-     ```
+  ```java
+  StudentRepository studentRepository = repoStore.getRepository(StudentRepository.class);
+  ```
 
-     + 第一个参数：用户的Main类的Class，即用户的`public static void main(String[] args) `方法坐在的类，当用户未提供`CustomRepoSetting`时，我们的项目用到了这个来解析默认的`entityPackage`和`repositoryPackage`。
+  它的构造函数接受两个类参数，以及一个可变长参数：
 
-     + 第二个参数：提供DataSource的类，这个类不需要继承任何类，必须有一个静态方法，其声明必须如下：
+  ```java
+  public RepoStore(Class mainClass, Class<?> dataSourceStore, CustomRepoSetting... customRepoSettings) {}
+  ```
 
-       ```java
-       public static DataSource getDataSource(String name) {}
-       ```
+  + 第一个参数：用户的Main类的Class，即用户的`public static void main(String[] args) `方法坐在的类，当用户未提供`CustomRepoSetting`时，我们的项目用到了这个来解析默认的`entityPackage`和`repositoryPackage`。
 
-       我们的项目通过反射获得这个方法，用`CustomRepoSetting`中的`dataSourceName`作为参数调用之，获得一个Datasource。
+  + 第二个参数：提供DataSource的类，这个类不需要继承任何类，必须有一个静态方法，其声明必须如下：
 
-     + 可变长参数，即用户自定义的配置，可以替换数据源、替换BaseRepository等。
+    ```java
+    public static DataSource getDataSource(String name) {}
+    ```
 
-5. SQLUtil
+    我们的项目通过反射获得这个方法，用`CustomRepoSetting`中的`dataSourceName`作为参数调用之，获得一个Datasource。
 
-   即具体生成SQL语句、执行SQL语句的类。
+  + 可变长参数，即用户自定义的配置，可以替换数据源、替换BaseRepository等。
 
-   目前我们对数据库方言没有支持，只支持了H2的方言(其实是Mysql兼容模式的H2)。
++ SQLUtil
 
-   以后如果要支持方言，在这里修改增加就行了。目前这里的方法都写成了静态方法，显然是无法支持方言了……以后有机会修改吧。
+  即具体生成SQL语句、执行SQL语句的类。
+
+  一个通用一点的数据库工具，显然需要考虑数据库方言。SQLUtil通过`util.databaseDialects`包里的`DialectBuilder`系列类来支持不同的方言。在用户创建datasource时，我们要求其调用`ToyDataSourceBuilder`类的`buildDataSource`方法，该方法会解析配置文件，并根据配置文件信息确定方言类型，之后将该方言情况注册到`DialectBuilderFactory`中，这样我们就可以根据DataSource来获得方言了。
+
++ ToyDataSourceBuilder
+
+  这是用来解析配置文件、构建DataSource的工具。我们要求用户在生成DataSource时使用这个类，这样我们才能保证将DataSource和方言对应起来。因为获知方言，要么在配置文件中显式指定，要么根据driver类来判定，但如果只是让用户提供一个DataSource，其实我们也不知道这个DataSource到底是什么类型，而DataSource本身的接口特别少，根本无法获取url。如果我们判断DataSource是什么类型，再做转化、取得url，显然我们就不可能穷尽所有的DataSource类型，这样也有瑕疵。
+
+  所以这样的实现方式非常不优雅，对真正的业务代码有所限制，然而不想再花精力在这上面，就先这样吧。
+
+#### `com.toySpring.repository.utils.databaseDialects`
+
++ DialectBuilder
+
+  所有方言构建器应当实现的接口，包括生成createTable、insert、update、delete等语句的方法接口。
+
++ DialectBuilderFactory
+
+  生成具体DialectBuilder的工厂。
+
++ H2DialectBuilder
+
+  我们目前唯一实现的一个方言，反正是玩具项目，意思意思就行了。
 
 ### 主要实现思路
 
@@ -338,7 +360,7 @@
 
    `com.toySpring.repository.custom.CustomRepoSetting`来实现的，可以在这里面指定要扫描的`Entity`所在包名，`Repository`所在包名，以及`DataSource`的名字，之后传给`RepoStore`来生成我们需要的业务Repository代理类。
 
-   其中，DataSource必须由用户预定义好，定义在什么类里面不重要，但这个类必须有一个静态方法，其声明为`public static DataSource getDataSource(String name) {}`，根据名字返回一个`DataSource`，在我的测试代码里，这个类叫做`com.lifeStory.DataSourceStore`，这个类也要被传入`RepoStore`的构造函数，以获得这些DataSource。
+   其中，DataSource必须由用户预定义好，定义在什么类里面不重要，但这个类必须有一个静态方法，其声明为`public static DataSource getDataSource(String name) {}`，根据名字返回一个`DataSource`，在我的测试代码里，这个类叫做`com.lifeStory.DataSourceStore`，这个类也要被传入`RepoStore`的构造函数，以获得这些DataSource。我们同时要求，用户在生成DataSource时，使用我们的`ToyDataSourceBuilder`来构建，这样我们就可以把DataSource和具体的方言联系起来。
 
 5. RepoStore
 
