@@ -90,7 +90,7 @@ public class RepositoryHandler<T, ID> implements InvocationHandler {
         Pair<Class, Class> realReturnType = checkAndGetReturnType(method);
 
         for (Field declaredField : parameterClass.getDeclaredFields()) {
-            if (entityInfo.getFieldName2Type().get(declaredField.getName()) != declaredField.getType()) {
+            if (entityInfo.getFiledName2Field().get(declaredField.getName()).getType() != declaredField.getType()) {
                 throw new RuntimeException(String.format("%s.%s()的返回类型与%s中的字段%s不匹配，请检查", method.getDeclaringClass().getName(), method.getName(), entityInfo.getEntityClass().getName(), declaredField.getName()));
             }
             ret.add(declaredField.getName());
@@ -157,7 +157,7 @@ public class RepositoryHandler<T, ID> implements InvocationHandler {
         if (returnType.getValue().isInterface()) {
             selectFieldNames = checkAndReturnFieldNamesByInterface(returnType.getValue(), domainClass, entityInfo);
         } else if (returnType.getValue() == domainClass) {
-            selectFieldNames = new ArrayList<>(entityInfo.getFieldName2Type().keySet());
+            selectFieldNames = new ArrayList<>(entityInfo.getFiledName2DBName().keySet());
         } else {
             throw new RuntimeException(String.format("%s.%s()返回值%s不支持", method.getDeclaringClass().getName(), method.getName(), returnType.getValue().getName()));
         }
@@ -180,7 +180,7 @@ public class RepositoryHandler<T, ID> implements InvocationHandler {
         List<String> ret = new ArrayList<>();
         for (Method declaredMethod : realReturnType.getDeclaredMethods()) {
             String fieldName = NameUtil.firstCharToLowerCase(declaredMethod.getName().replaceFirst("^get", ""));
-            if (entityInfo.getFieldName2Type().get(fieldName) != declaredMethod.getReturnType()) {
+            if (entityInfo.getFiledName2Field().get(fieldName).getType() != declaredMethod.getReturnType()) {
                 throw new RuntimeException(String.format("%s.%s()的返回类型与%s中的字段%s不匹配，请检查", realReturnType.getName(), declaredMethod.getName(), domainClass.getName(), fieldName));
             }
             ret.add(fieldName);
@@ -211,8 +211,8 @@ public class RepositoryHandler<T, ID> implements InvocationHandler {
 
         // 检查一下参数类型和Entity类型是否匹配
         for (int i = 0; i != parameters.size(); ++i) {
-            if (entityInfo.getFieldName2Type().get(queryFieldNames.get(i)) == null ||
-                !entityInfo.getFieldName2Type().get(queryFieldNames.get(i)).equals(method.getParameters()[i].getType())) {
+            if (entityInfo.getFiledName2Field().get(queryFieldNames.get(i)).getType() == null ||
+                !entityInfo.getFiledName2Field().get(queryFieldNames.get(i)).getType().equals(method.getParameters()[i].getType())) {
                 throw new RuntimeException("第" + i + "个参数类型错误：" + method.getName());
             }
         }

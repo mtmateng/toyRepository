@@ -71,7 +71,7 @@ public class SQLUtil {
 
         Map<String, Object> ret = new HashMap<>();
         for (String fieldName : selectFieldNames) {
-            Class fieldType = entityInfo.getFieldName2Type().get(fieldName);
+            Class fieldType = entityInfo.getFiledName2Field().get(fieldName).getType();
             switch (fieldType.getName()) {
                 case "java.lang.String":
                     ret.put(fieldName, resultSet.getString(entityInfo.getFiledName2DBName().get(fieldName)));

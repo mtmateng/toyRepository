@@ -3,7 +3,7 @@ package com.toySpring.repository.utils.databaseDialects;
 import com.toySpring.repository.helper.EntityInfo;
 
 import java.beans.PropertyDescriptor;
-import java.time.LocalDate;
+import java.lang.reflect.Field;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -30,10 +30,10 @@ class H2DialectBuilder implements DialectBuilder {
     @Override
     public String buildCreateTableSql(EntityInfo entityInfo) {
         StringBuilder fieldClaus = new StringBuilder();
-        for (String fieldName : entityInfo.getFieldName2Type().keySet()) {
+        for (String fieldName : entityInfo.getFiledName2Field().keySet()) {
             fieldClaus.append(entityInfo.getFiledName2DBName().get(fieldName))
                 .append(" ")
-                .append(generateDBType(entityInfo.getFieldName2Type().get(fieldName)))
+                .append(generateDBType(entityInfo.getFiledName2Field().get(fieldName)))
                 .append(", ");
         }
         return String.format(CREATE_TABLE_TEMPLATE, entityInfo.getEntityDBName()
@@ -53,8 +53,7 @@ class H2DialectBuilder implements DialectBuilder {
 
         for (int i = 0; i != queryFieldNames.size(); ++i) {
             sqlSb.append(entityInfo.getFiledName2DBName().get(queryFieldNames.get(i))).append("=");
-            if (entityInfo.getFieldName2Type().get(queryFieldNames.get(i).toLowerCase()) == String.class
-                || entityInfo.getFieldName2Type().get(queryFieldNames.get(i).toLowerCase()) == LocalDate.class) {
+            if (!NO_QUOTE_CLASS.contains(entityInfo.getFiledName2Field().get(queryFieldNames.get(i)).getType())) {
                 sqlSb.append(" '").append("%s").append("' ").append("and ");
             } else {
                 sqlSb.append(" %s ").append(" and ");
@@ -74,14 +73,14 @@ class H2DialectBuilder implements DialectBuilder {
                 PropertyDescriptor prop = new PropertyDescriptor(fieldName, entityInfo.getEntityClass());
                 sb.append(entityInfo.getFiledName2DBName().get(fieldName))
                     .append(" = ")
-                    .append(NO_QUOTE_CLASS.contains(entityInfo.getFieldName2Type().get(fieldName)) ? "" : "'")
+                    .append(NO_QUOTE_CLASS.contains(entityInfo.getFiledName2Field().get(fieldName).getType()) ? "" : "'")
                     .append(prop.getReadMethod().invoke(entity))
-                    .append(NO_QUOTE_CLASS.contains(entityInfo.getFieldName2Type().get(fieldName)) ? "" : "'")
+                    .append(NO_QUOTE_CLASS.contains(entityInfo.getFiledName2Field().get(fieldName).getType()) ? "" : "'")
                     .append(" , ");
             }
             PropertyDescriptor prop = new PropertyDescriptor(entityInfo.getIdFieldName(), entityInfo.getEntityClass());
             sb.delete(sb.length() - 3, sb.length()).append(" WHERE ").append(entityInfo.getIdDBName()).append(" = ")
-                .append(NO_QUOTE_CLASS.contains(entityInfo.getFieldName2Type().get(entityInfo.getIdFieldName())) ? prop.getReadMethod().invoke(entity) : "'" + prop.getReadMethod().invoke(entity) + "'");
+                .append(NO_QUOTE_CLASS.contains(entityInfo.getFiledName2Field().get(entityInfo.getIdFieldName()).getType()) ? prop.getReadMethod().invoke(entity) : "'" + prop.getReadMethod().invoke(entity) + "'");
             return sb.toString();
         } catch (Exception e) {
             throw new RuntimeException(String.format("为%s构建Update语句时失败", entity));
@@ -101,9 +100,9 @@ class H2DialectBuilder implements DialectBuilder {
             sb.delete(sb.length() - 2, sb.length()).append(") VALUES (");
             for (String fieldName : entityInfo.getFiledName2DBName().keySet()) {
                 PropertyDescriptor prop = new PropertyDescriptor(fieldName, entityInfo.getEntityClass());
-                sb.append(NO_QUOTE_CLASS.contains(entityInfo.getFieldName2Type().get(fieldName)) ? "" : "'")
+                sb.append(NO_QUOTE_CLASS.contains(entityInfo.getFiledName2Field().get(fieldName).getType()) ? "" : "'")
                     .append(prop.getReadMethod().invoke(entity))
-                    .append(NO_QUOTE_CLASS.contains(entityInfo.getFieldName2Type().get(fieldName)) ? "" : "'")
+                    .append(NO_QUOTE_CLASS.contains(entityInfo.getFiledName2Field().get(fieldName).getType()) ? "" : "'")
                     .append(" , ");
 
             }
@@ -129,10 +128,11 @@ class H2DialectBuilder implements DialectBuilder {
     }
 
     /**
-     * 产生需要的type字句，类似于varchar(255)这样子的东西，显然，我们这里支持的相当有限，也不支持Lob、自定义长度等
-     * 意思到了就行
+     * 产生需要的type字句，类似于varchar(255)这样子的东西，我们这里已经预留了支持扩展字段长度、自定义的接口
+     * 毕竟把Field都传进来了，解读它上面的注解也是顺手的事儿，但我目前还没有实现，就简单支持这几种好了。
      */
-    private static String generateDBType(Class aClass) {
+    private static String generateDBType(Field field) {
+        Class aClass = field.getType();
         switch (aClass.getName()) {
             case "java.lang.String":
                 return "VARCHAR(255)";
