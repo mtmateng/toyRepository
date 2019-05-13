@@ -2,6 +2,7 @@ package com.toySpring.repository.helper;
 
 import lombok.Data;
 
+import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -12,7 +13,7 @@ public class EntityInfo {
     private String idFieldName = null;
     private String idDBName = null;
     private String entityDBName;
+    private Map<String, Field> filedName2Field = new HashMap<>();
     private Map<String, String> filedName2DBName = new HashMap<>();
-    private Map<String, Class> fieldName2Type = new HashMap<>();
 
 }

@@ -54,7 +54,7 @@ class EntityUtil {
                     entityInfo.setIdFieldName(declaredField.getName());
                 }
                 entityInfo.getFiledName2DBName().put(declaredField.getName(), NameUtil.getDataBaseName(declaredField.getName()));
-                entityInfo.getFieldName2Type().put(declaredField.getName(), declaredField.getType());
+                entityInfo.getFiledName2Field().put(declaredField.getName(),declaredField);
             }
             if (entityInfo.getIdFieldName() == null) {
                 throw new RuntimeException(String.format("%s实体没有找到Id字段", entity.getName()));
