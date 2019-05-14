@@ -182,7 +182,7 @@
 + BaseRepository。对应Spring中的`SimpleJPARepository`，是所有Repository接口的实现类，实现了`Repository`系列标记接口的所有方法。当然啦， 在我这个小项目里，这个系列接口只有`Repository`一个接口。当用户想要提供自定义的BaseRepository方法时，必须扩展这个类。
 + BaseRepositoryFactory。当我们要用自定义的BaseRepository来替代原有的BaseRepository时，可以很容易地想到使用工厂方法，而我们的这个类也就是为了生产BaseRepository的。
 
-####`com.toySpring.repository.custom`
+#### `com.toySpring.repository.custom`
 
 这个包是Spring中`@EnableJPARepository`的替代品，考虑到如果我要使用注解的话，配多数据源就需要多个注解，但一个类上面又不能标记重复注解，所以我就需要至少两个类，Spring是依靠它本身的依赖注入功能，结合`@Configuration`注解一起实现的多`@EnableJPARepository`注解，从而实现了多数据源。但我们显然很难参考这种方法，因为这样的话我们就必须实现Spring框架的很多功能。因此，我们这里采取了一种更简便的方式，即提供了一个`com.toySpring.repository.custom.CustomRepoSetting`类，如下：
 
